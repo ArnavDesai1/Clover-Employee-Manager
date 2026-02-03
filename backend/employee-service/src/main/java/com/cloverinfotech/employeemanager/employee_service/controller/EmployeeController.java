@@ -12,7 +12,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/employees")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = {
+        "http://localhost:3000",
+        "https://clover-employee-manager.vercel.app"
+})
 public class EmployeeController {
 
     private final EmployeeService employeeService;
