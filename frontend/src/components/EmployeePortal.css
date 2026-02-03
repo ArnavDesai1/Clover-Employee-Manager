@@ -1,0 +1,180 @@
+.portal-header {
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--border);
+  position: relative;
+}
+
+.portal-header::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 80px;
+  height: 2px;
+  background: var(--accent);
+}
+
+.portal-header h2 {
+  color: var(--primary);
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0 0 6px 0;
+}
+
+.portal-subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.portal-loading {
+  text-align: center;
+  color: var(--primary);
+  padding: 48px 24px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.portal-content {
+  max-width: 640px;
+}
+
+.portal-profile-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.portal-card-header {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+}
+
+.portal-card-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: white;
+}
+
+.portal-card-body {
+  padding: 20px 24px;
+}
+
+.portal-card-body .info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.portal-card-body .info-row:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.portal-card-body .label {
+  color: var(--primary);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  min-width: 100px;
+}
+
+.portal-card-body .value {
+  color: var(--text);
+  font-size: 14px;
+  flex: 1;
+}
+
+.portal-card-body .info-row-hobbies .value {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.portal-card-body .hobby-tag {
+  display: inline-block;
+  padding: 6px 12px;
+  font-size: 12px;
+  background: #e8eef4;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+}
+
+.portal-card-actions {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-page);
+}
+
+.portal-card-actions .btn-edit {
+  min-height: 44px;
+  padding: 0 24px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.portal-card-actions .btn-edit:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.portal-hint {
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.portal-form-wrap {
+  max-width: 880px;
+}
+
+.portal-empty {
+  background: var(--bg-card);
+  padding: 48px 32px;
+  border-radius: var(--radius-lg);
+  text-align: center;
+  border: 2px dashed var(--border);
+}
+
+.portal-empty p {
+  margin: 0 0 20px 0;
+  color: var(--text-muted);
+  font-size: 16px;
+}
+
+.portal-empty .btn-add {
+  background: var(--accent);
+  color: white;
+  min-height: 48px;
+  padding: 0 24px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: var(--radius);
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.portal-empty .btn-add:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
