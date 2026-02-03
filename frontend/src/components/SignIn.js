@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import './SignIn.css';
@@ -16,10 +16,36 @@ const SignIn = () => {
 
   const from = location.state?.from?.pathname || '/';
 
-  const getPostLoginPath = (user) => {
+  const getPostLoginPath = useCallback((user) => {
     if (user?.role === 'Employee') return '/employee';
     return from && from !== '/signin' ? from : '/';
-  };
+  }, [from]);
+
+  const handleGoogleSignIn = useCallback(async (response) => {
+    setError('');
+    setLoading(true);
+
+    try {
+      // Decode JWT token (in production, send to backend for validation)
+      const payload = JSON.parse(atob(response.credential.split('.')[1]));
+      
+      const result = await signInWithGoogle({
+        email: payload.email,
+        name: payload.name,
+        picture: payload.picture,
+      });
+
+      if (result.success) {
+        navigate(getPostLoginPath(result.user), { replace: true });
+      } else {
+        setError(result.error || 'Google sign in failed');
+      }
+    } catch (err) {
+      setError('An error occurred during Google sign in.');
+    } finally {
+      setLoading(false);
+    }
+  }, [getPostLoginPath, navigate, signInWithGoogle]);
 
   useEffect(() => {
     // Load Google Identity Services only if Client ID is configured
@@ -67,33 +93,7 @@ const SignIn = () => {
         document.head.removeChild(script);
       }
     };
-  }, []);
-
-  const handleGoogleSignIn = async (response) => {
-    setError('');
-    setLoading(true);
-
-    try {
-      // Decode JWT token (in production, send to backend for validation)
-      const payload = JSON.parse(atob(response.credential.split('.')[1]));
-      
-      const result = await signInWithGoogle({
-        email: payload.email,
-        name: payload.name,
-        picture: payload.picture,
-      });
-
-      if (result.success) {
-        navigate(getPostLoginPath(result.user), { replace: true });
-      } else {
-        setError(result.error || 'Google sign in failed');
-      }
-    } catch (err) {
-      setError('An error occurred during Google sign in.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [handleGoogleSignIn]);
 
   const handleMockGoogleSignIn = async () => {
     setError('');

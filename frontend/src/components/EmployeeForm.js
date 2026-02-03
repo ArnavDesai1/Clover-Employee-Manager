@@ -40,17 +40,20 @@ function EmployeeForm({ selfRegisterEmail, onEmployeeAdded, onSuccessRedirect })
     'Traveling','Photography','Writing','Coding'
   ];
 
-  const loadEmployee = async () => {
-    try {
-      const res = await employeeAPI.getEmployeeById(id);
-      setFormData(res.data);
-    } catch {
-      setError('Failed to load employee');
-    }
-  };
-
   useEffect(() => {
-    if (id) loadEmployee();
+    if (!id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await employeeAPI.getEmployeeById(id);
+        if (!cancelled) setFormData(res.data);
+      } catch {
+        if (!cancelled) setError('Failed to load employee');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   const handleChange = (e) => {

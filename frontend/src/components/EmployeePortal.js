@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import employeeAPI from '../services/employeeAPI';
@@ -13,15 +13,7 @@ const EmployeePortal = () => {
   const [error, setError] = useState('');
   const [showRegisterForm, setShowRegisterForm] = useState(false);
 
-  useEffect(() => {
-    if (user?.role !== 'Employee' || !user?.email) {
-      navigate('/', { replace: true });
-      return;
-    }
-    fetchMyProfile();
-  }, [user?.email, user?.role, navigate]);
-
-  const fetchMyProfile = async () => {
+  const fetchMyProfile = useCallback(async () => {
     if (!user?.email) return;
     setLoading(true);
     setError('');
@@ -38,7 +30,15 @@ const EmployeePortal = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.email]);
+
+  useEffect(() => {
+    if (user?.role !== 'Employee' || !user?.email) {
+      navigate('/', { replace: true });
+      return;
+    }
+    fetchMyProfile();
+  }, [user?.email, user?.role, navigate, fetchMyProfile]);
 
   const handleSelfRegisterSuccess = () => {
     fetchMyProfile();
