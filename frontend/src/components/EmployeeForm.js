@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { employeeAPI } from '../services/employeeAPI';
 import { useNavigate, useParams } from 'react-router-dom';
 import '../styles/EmployeeForm.css';
@@ -40,21 +40,27 @@ function EmployeeForm({ selfRegisterEmail, onEmployeeAdded, onSuccessRedirect })
     'Traveling','Photography','Writing','Coding'
   ];
 
+  const loadEmployee = useCallback(async (employeeId) => {
+    try {
+      const res = await employeeAPI.getEmployeeById(employeeId);
+      setFormData(res.data);
+    } catch {
+      setError('Failed to load employee');
+    }
+  }, []);
+
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
     (async () => {
-      try {
-        const res = await employeeAPI.getEmployeeById(id);
-        if (!cancelled) setFormData(res.data);
-      } catch {
-        if (!cancelled) setError('Failed to load employee');
+      if (!cancelled) {
+        await loadEmployee(id);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, loadEmployee]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
