@@ -78,10 +78,11 @@ const SignIn = () => {
         });
 
         if (googleButtonRef.current) {
+          const buttonWidth = Math.min(googleButtonRef.current.offsetWidth || 320, 360);
           window.google.accounts.id.renderButton(googleButtonRef.current, {
             theme: 'outline',
             size: 'large',
-            width: '100%',
+            width: buttonWidth,
             text: 'signin_with',
           });
         }
@@ -202,7 +203,7 @@ const SignIn = () => {
         <div className="signin-google">
           {googleConfigured ? (
             <>
-              <div ref={googleButtonRef}></div>
+              <div ref={googleButtonRef} className="signin-google-button-wrap"></div>
               <p className="signin-google-note">Use your Google account (@cloverinfotech.com)</p>
             </>
           ) : (

@@ -68,7 +68,7 @@ const EmployeeList = ({ refresh }) => {
 
       {loading ? (
         <div className="loading">Loading...</div>
-      ) : employees.length === 0 ? (
+      ) : error ? null : employees.length === 0 ? (
         <div className="empty-state">
           <p>No employees found.</p>
         </div>
