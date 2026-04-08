@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -45,6 +46,11 @@ public class DataSeeder implements CommandLineRunner {
             Set<String> existingPans = employeeRepository.findAll().stream()
                     .map(Employee::getPan)
                     .filter(p -> p != null && !p.isBlank())
+                    .collect(Collectors.toSet());
+            Set<String> existingEmails = employeeRepository.findAll().stream()
+                    .map(Employee::getEmail)
+                    .filter(e -> e != null && !e.isBlank())
+                    .map(e -> e.toLowerCase(Locale.ROOT))
                     .collect(Collectors.toSet());
 
             List<Employee> seedEmployees = Arrays.asList(
@@ -133,6 +139,8 @@ public class DataSeeder implements CommandLineRunner {
 
             List<Employee> toInsert = seedEmployees.stream()
                     .filter(e -> e.getPan() == null || e.getPan().isBlank() || !existingPans.contains(e.getPan()))
+                    .filter(e -> e.getEmail() == null || e.getEmail().isBlank()
+                            || !existingEmails.contains(e.getEmail().toLowerCase(Locale.ROOT)))
                     .limit(Math.max(0, targetEmployees - current))
                     .toList();
 
