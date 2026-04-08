@@ -164,6 +164,38 @@
   font-size: 14px;
 }
 
+.employee-form .existing-file {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.employee-form .existing-file-name {
+  color: var(--text-muted);
+  font-size: 13px;
+  word-break: break-all;
+}
+
+.employee-form .existing-file .btn-link {
+  background: none;
+  border: none;
+  color: var(--primary);
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.employee-form .existing-file .btn-link:hover {
+  color: var(--primary-dark);
+}
+
 /* Submit – Axis Bank accent */
 .employee-form .submit-btn {
   margin-top: 20px;
