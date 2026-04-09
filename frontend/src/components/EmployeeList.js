@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import employeeAPI from '../services/employeeAPI';
 import './EmployeeList.css';
 
+const API_BASE = process.env.REACT_APP_API_URL || '';
+
 const EmployeeList = ({ refresh }) => {
   const [employees, setEmployees] = useState([]);
   const [pendingEmployees, setPendingEmployees] = useState([]);
   const [pendingRoleDrafts, setPendingRoleDrafts] = useState({});
-  const [expandedIds, setExpandedIds] = useState(new Set());
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -45,51 +47,47 @@ const EmployeeList = ({ refresh }) => {
 
   const handleDelete = async (id) => {
     if (window.confirm('Delete this employee?')) {
-      await employeeAPI.deleteEmployee(id);
-      fetchEmployees();
+      try {
+        await employeeAPI.deleteEmployee(id);
+        fetchEmployees();
+      } catch (err) {
+        setError(err?.response?.data?.message || 'Failed to delete employee');
+      }
     }
   };
 
-  const createObjectUrl = async (id, type) => {
-    const res =
-      type === 'profile'
-        ? await employeeAPI.downloadProfilePicture(id)
-        : await employeeAPI.downloadAddressProof(id);
+  const getFileUrl = (id, type) =>
+    `${API_BASE}/employees/${id}/${type === 'profile' ? 'profile-picture' : 'address-proof'}`;
 
-    const blob = new Blob([res.data], { type: res.headers['content-type'] });
-    return {
-      url: URL.createObjectURL(blob),
-      contentType: res.headers['content-type'] || 'application/octet-stream',
-    };
-  };
-
-  const previewFile = async (id, type) => {
-    const { url } = await createObjectUrl(id, type);
-    window.open(url, '_blank', 'noopener,noreferrer');
+  const previewFile = (id, type) => {
+    window.open(getFileUrl(id, type), '_blank', 'noopener,noreferrer');
   };
 
   const downloadFile = async (id, type, nameHint = 'document') => {
-    const { url, contentType } = await createObjectUrl(id, type);
-    const ext =
-      contentType.includes('pdf') ? 'pdf' :
-      contentType.includes('png') ? 'png' :
-      contentType.includes('jpeg') || contentType.includes('jpg') ? 'jpg' : 'bin';
+    try {
+      const res =
+        type === 'profile'
+          ? await employeeAPI.downloadProfilePicture(id)
+          : await employeeAPI.downloadAddressProof(id);
 
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `${nameHint}.${ext}`;
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-  };
+      const contentType = res.headers['content-type'] || 'application/octet-stream';
+      const blob = new Blob([res.data], { type: contentType });
+      const url = URL.createObjectURL(blob);
+      const ext =
+        contentType.includes('pdf') ? 'pdf' :
+        contentType.includes('png') ? 'png' :
+        contentType.includes('jpeg') || contentType.includes('jpg') ? 'jpg' : 'bin';
 
-  const toggleExpanded = (id) => {
-    setExpandedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `${nameHint}.${ext}`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Failed to download file');
+    }
   };
 
   const handleApprove = async (id) => {
@@ -155,6 +153,34 @@ const EmployeeList = ({ refresh }) => {
                       .filter(Boolean)
                       .join(', ') || 'Address not provided'}
                   </div>
+                  <div className="file-actions pending-file-actions">
+                    {employee.profilePicturePath ? (
+                      <>
+                        <button type="button" className="btn-link" onClick={() => previewFile(employee.id, 'profile')}>
+                          Preview Profile
+                        </button>
+                        <button type="button" className="btn-link" onClick={() => downloadFile(employee.id, 'profile', `profile_${employee.id}`)}>
+                          Download Profile
+                        </button>
+                      </>
+                    ) : (
+                      <span className="value value-muted">Profile not uploaded</span>
+                    )}
+                  </div>
+                  <div className="file-actions pending-file-actions">
+                    {employee.addressProofPath ? (
+                      <>
+                        <button type="button" className="btn-link" onClick={() => previewFile(employee.id, 'proof')}>
+                          Preview Proof
+                        </button>
+                        <button type="button" className="btn-link" onClick={() => downloadFile(employee.id, 'proof', `address_proof_${employee.id}`)}>
+                          Download Proof
+                        </button>
+                      </>
+                    ) : (
+                      <span className="value value-muted">Address proof not uploaded</span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="pending-actions">
@@ -168,31 +194,6 @@ const EmployeeList = ({ refresh }) => {
                       }
                     />
                   </label>
-                  {employee.profilePicturePath ? (
-                    <div className="file-actions">
-                      <button type="button" className="btn-link" onClick={() => previewFile(employee.id, 'profile')}>
-                        Preview Profile
-                      </button>
-                      <button type="button" className="btn-link" onClick={() => downloadFile(employee.id, 'profile', `profile_${employee.id}`)}>
-                        Download Profile
-                      </button>
-                    </div>
-                  ) : (
-                    <span className="value value-muted">Profile not uploaded</span>
-                  )}
-
-                  {employee.addressProofPath ? (
-                    <div className="file-actions">
-                      <button type="button" className="btn-link" onClick={() => previewFile(employee.id, 'proof')}>
-                        Preview Proof
-                      </button>
-                      <button type="button" className="btn-link" onClick={() => downloadFile(employee.id, 'proof', `address_proof_${employee.id}`)}>
-                        Download Proof
-                      </button>
-                    </div>
-                  ) : (
-                    <span className="value value-muted">Address proof not uploaded</span>
-                  )}
                   <button className="btn-edit" onClick={() => handleApprove(employee.id)}>
                     Approve Employee
                   </button>
@@ -233,84 +234,23 @@ const EmployeeList = ({ refresh }) => {
                   </div>
                 )}
 
+                {employee.city && (
+                  <div className="info-row">
+                    <span className="label">City:</span>
+                    <span className="value">{employee.city}</span>
+                  </div>
+                )}
+
                 <div className="info-row">
                   <span className="label">Details:</span>
                   <button
                     type="button"
                     className="btn-link"
-                    onClick={() => toggleExpanded(employee.id)}
+                    onClick={() => setSelectedEmployee(employee)}
                   >
-                    {expandedIds.has(employee.id) ? 'View less' : 'View more'}
+                    View more
                   </button>
                 </div>
-
-                {expandedIds.has(employee.id) && (
-                  <>
-                    {(employee.address1 || employee.city || employee.pin) && (
-                      <div className="info-row">
-                        <span className="label">Address:</span>
-                        <span className="value">
-                          {[employee.address1, employee.address2, employee.city, employee.state, employee.pin]
-                            .filter(Boolean)
-                            .join(', ')}
-                        </span>
-                      </div>
-                    )}
-
-                    {employee.gender && (
-                      <div className="info-row">
-                        <span className="label">Gender:</span>
-                        <span className="value">{employee.gender}</span>
-                      </div>
-                    )}
-
-                    {employee.hobbies && (
-                      <div className="info-row">
-                        <span className="label">Hobbies:</span>
-                        <span className="value">{employee.hobbies}</span>
-                      </div>
-                    )}
-
-                    {employee.pan && (
-                      <div className="info-row">
-                        <span className="label">PAN:</span>
-                        <span className="value">{employee.pan}</span>
-                      </div>
-                    )}
-
-                    <div className="info-row">
-                      <span className="label">Profile:</span>
-                      {employee.profilePicturePath ? (
-                        <div className="file-actions">
-                          <button type="button" className="btn-link" onClick={() => previewFile(employee.id, 'profile')}>
-                            Preview
-                          </button>
-                          <button type="button" className="btn-link" onClick={() => downloadFile(employee.id, 'profile', `profile_${employee.id}`)}>
-                            Download
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="value value-muted">Not uploaded</span>
-                      )}
-                    </div>
-
-                    <div className="info-row">
-                      <span className="label">Address Proof:</span>
-                      {employee.addressProofPath ? (
-                        <div className="file-actions">
-                          <button type="button" className="btn-link" onClick={() => previewFile(employee.id, 'proof')}>
-                            Preview
-                          </button>
-                          <button type="button" className="btn-link" onClick={() => downloadFile(employee.id, 'proof', `address_proof_${employee.id}`)}>
-                            Download
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="value value-muted">Not uploaded</span>
-                      )}
-                    </div>
-                  </>
-                )}
               </div>
 
               <div className="card-actions">
@@ -323,6 +263,68 @@ const EmployeeList = ({ refresh }) => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {selectedEmployee && (
+        <div className="preview-modal-overlay" onClick={() => setSelectedEmployee(null)}>
+          <div className="preview-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="preview-header">
+              <h3>{selectedEmployee.name} - Details</h3>
+              <button className="close-btn" onClick={() => setSelectedEmployee(null)}>×</button>
+            </div>
+            <div className="preview-content details-modal-content">
+              <div className="details-grid">
+                <div className="info-row"><span className="label">ID:</span><span className="value">#{selectedEmployee.id}</span></div>
+                <div className="info-row"><span className="label">Role:</span><span className="value">{selectedEmployee.role}</span></div>
+                {selectedEmployee.birthdate && <div className="info-row"><span className="label">Birthdate:</span><span className="value">{selectedEmployee.birthdate}</span></div>}
+                {selectedEmployee.gender && <div className="info-row"><span className="label">Gender:</span><span className="value">{selectedEmployee.gender}</span></div>}
+                {selectedEmployee.hobbies && <div className="info-row"><span className="label">Hobbies:</span><span className="value">{selectedEmployee.hobbies}</span></div>}
+                {selectedEmployee.pan && <div className="info-row"><span className="label">PAN:</span><span className="value">{selectedEmployee.pan}</span></div>}
+                {selectedEmployee.email && <div className="info-row"><span className="label">Email:</span><span className="value">{selectedEmployee.email}</span></div>}
+                {(selectedEmployee.address1 || selectedEmployee.city || selectedEmployee.pin) && (
+                  <div className="info-row">
+                    <span className="label">Address:</span>
+                    <span className="value">
+                      {[selectedEmployee.address1, selectedEmployee.address2, selectedEmployee.city, selectedEmployee.state, selectedEmployee.pin]
+                        .filter(Boolean)
+                        .join(', ')}
+                    </span>
+                  </div>
+                )}
+                <div className="info-row">
+                  <span className="label">Profile:</span>
+                  {selectedEmployee.profilePicturePath ? (
+                    <div className="file-actions">
+                      <button type="button" className="btn-link" onClick={() => previewFile(selectedEmployee.id, 'profile')}>
+                        Preview
+                      </button>
+                      <button type="button" className="btn-link" onClick={() => downloadFile(selectedEmployee.id, 'profile', `profile_${selectedEmployee.id}`)}>
+                        Download
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="value value-muted">Not uploaded</span>
+                  )}
+                </div>
+                <div className="info-row">
+                  <span className="label">Address Proof:</span>
+                  {selectedEmployee.addressProofPath ? (
+                    <div className="file-actions">
+                      <button type="button" className="btn-link" onClick={() => previewFile(selectedEmployee.id, 'proof')}>
+                        Preview
+                      </button>
+                      <button type="button" className="btn-link" onClick={() => downloadFile(selectedEmployee.id, 'proof', `address_proof_${selectedEmployee.id}`)}>
+                        Download
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="value value-muted">Not uploaded</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

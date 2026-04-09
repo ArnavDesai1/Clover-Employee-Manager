@@ -132,6 +132,8 @@
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   position: relative;
   z-index: 1;
+  max-width: 75%;
+  overflow-wrap: anywhere;
 }
 
 .role-badge {
@@ -396,7 +398,7 @@
   background: white;
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-  max-width: 600px;
+  max-width: 760px;
   width: 90%;
   max-height: 80vh;
   display: flex;
@@ -451,6 +453,15 @@
 .preview-content img,
 .preview-content iframe {
   border-radius: 8px;
+}
+
+.details-modal-content {
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+.details-grid {
+  width: 100%;
 }
 
 .pending-approvals {
@@ -528,5 +539,9 @@
   padding: 0 10px;
   border: 1px solid #e0cd9e;
   border-radius: 6px;
+}
+
+.pending-file-actions {
+  justify-content: flex-start;
 }
   
