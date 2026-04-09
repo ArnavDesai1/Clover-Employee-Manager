@@ -62,6 +62,9 @@ public class Employee {
     @Column(name = "address_proof_content_type")
     private String addressProofContentType;
 
+    @Column(name = "approval_status", nullable = false)
+    private String approvalStatus = "APPROVED";
+
     // ===== Getters & Setters =====
 
     public Long getId() {
@@ -198,5 +201,13 @@ public class Employee {
 
     public void setAddressProofContentType(String addressProofContentType) {
         this.addressProofContentType = addressProofContentType;
+    }
+
+    public String getApprovalStatus() {
+        return approvalStatus;
+    }
+
+    public void setApprovalStatus(String approvalStatus) {
+        this.approvalStatus = approvalStatus;
     }
 }

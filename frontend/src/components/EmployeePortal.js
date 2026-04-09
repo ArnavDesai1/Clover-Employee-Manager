@@ -70,6 +70,12 @@ const EmployeePortal = () => {
               <span className="role-badge">{myEmployee.role}</span>
             </div>
             <div className="portal-card-body">
+              {myEmployee.approvalStatus && myEmployee.approvalStatus.toUpperCase() === 'PENDING' && (
+                <div className="info-row">
+                  <span className="label">Application</span>
+                  <span className="value">Pending admin approval</span>
+                </div>
+              )}
               {myEmployee.birthdate && (
                 <div className="info-row">
                   <span className="label">Birthdate</span>

@@ -6,4 +6,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 
     java.util.Optional<Employee> findByEmailIgnoreCase(String email);
+
+    java.util.Optional<Employee> findByPanIgnoreCase(String pan);
+
+    java.util.List<Employee> findByApprovalStatusIgnoreCase(String approvalStatus);
 }

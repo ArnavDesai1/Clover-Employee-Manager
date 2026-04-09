@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class EmployeeServiceImpl implements EmployeeService {
@@ -24,12 +25,32 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public Employee createEmployee(Employee employee) {
+        return createEmployee(employee, false);
+    }
+
+    @Override
+    public Employee createEmployee(Employee employee, boolean selfRegistration) {
+        normalize(employee);
+        validateRequired(employee);
+        validateUnique(employee, null);
+
+        if (selfRegistration) {
+            employee.setRole("Employee");
+            employee.setApprovalStatus("PENDING");
+        } else if (employee.getApprovalStatus() == null || employee.getApprovalStatus().isBlank()) {
+            employee.setApprovalStatus("APPROVED");
+        }
         return employeeRepository.save(employee);
     }
 
     @Override
     public List<Employee> getAllEmployees() {
-        return employeeRepository.findAll();
+        return employeeRepository.findByApprovalStatusIgnoreCase("APPROVED");
+    }
+
+    @Override
+    public List<Employee> getPendingEmployees() {
+        return employeeRepository.findByApprovalStatusIgnoreCase("PENDING");
     }
 
     @Override
@@ -47,6 +68,9 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public Employee updateEmployee(Long id, Employee updatedEmployee) {
         Employee existing = getEmployeeById(id);
+        normalize(updatedEmployee);
+        validateRequired(updatedEmployee);
+        validateUnique(updatedEmployee, id);
 
         existing.setName(updatedEmployee.getName());
         existing.setRole(updatedEmployee.getRole());
@@ -62,8 +86,18 @@ public class EmployeeServiceImpl implements EmployeeService {
         if (updatedEmployee.getEmail() != null) {
             existing.setEmail(updatedEmployee.getEmail());
         }
+        if (updatedEmployee.getApprovalStatus() != null && !updatedEmployee.getApprovalStatus().isBlank()) {
+            existing.setApprovalStatus(updatedEmployee.getApprovalStatus());
+        }
 
         return employeeRepository.save(existing);
+    }
+
+    @Override
+    public Employee approveEmployee(Long id) {
+        Employee employee = getEmployeeById(id);
+        employee.setApprovalStatus("APPROVED");
+        return employeeRepository.save(employee);
     }
 
     @Override
@@ -134,5 +168,55 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     private String getExtension(String filename) {
         return filename.substring(filename.lastIndexOf('.'));
+    }
+
+    private void normalize(Employee employee) {
+        if (employee == null) {
+            throw new IllegalArgumentException("Employee payload is required");
+        }
+        if (employee.getName() != null) employee.setName(employee.getName().trim());
+        if (employee.getRole() != null) employee.setRole(employee.getRole().trim());
+        if (employee.getCity() != null) employee.setCity(employee.getCity().trim());
+        if (employee.getState() != null) employee.setState(employee.getState().trim());
+        if (employee.getAddress1() != null) employee.setAddress1(employee.getAddress1().trim());
+        if (employee.getAddress2() != null) employee.setAddress2(employee.getAddress2().trim());
+        if (employee.getPin() != null) employee.setPin(employee.getPin().trim());
+        if (employee.getPan() != null) employee.setPan(employee.getPan().trim().toUpperCase(Locale.ROOT));
+        if (employee.getEmail() != null && !employee.getEmail().isBlank()) {
+            employee.setEmail(employee.getEmail().trim().toLowerCase(Locale.ROOT));
+        }
+    }
+
+    private void validateRequired(Employee employee) {
+        if (isBlank(employee.getName())) throw new IllegalArgumentException("Name is required");
+        if (isBlank(employee.getRole())) throw new IllegalArgumentException("Role is required");
+        if (employee.getBirthdate() == null) throw new IllegalArgumentException("Birthdate is required");
+        if (isBlank(employee.getGender())) throw new IllegalArgumentException("Gender is required");
+        if (isBlank(employee.getAddress1())) throw new IllegalArgumentException("Address line 1 is required");
+        if (isBlank(employee.getCity())) throw new IllegalArgumentException("City is required");
+        if (isBlank(employee.getState())) throw new IllegalArgumentException("State is required");
+        if (isBlank(employee.getPin())) throw new IllegalArgumentException("PIN code is required");
+        if (isBlank(employee.getPan())) throw new IllegalArgumentException("PAN is required");
+    }
+
+    private void validateUnique(Employee employee, Long currentEmployeeId) {
+        if (!isBlank(employee.getPan())) {
+            employeeRepository.findByPanIgnoreCase(employee.getPan()).ifPresent(existing -> {
+                if (currentEmployeeId == null || !existing.getId().equals(currentEmployeeId)) {
+                    throw new IllegalArgumentException("PAN already exists");
+                }
+            });
+        }
+        if (!isBlank(employee.getEmail())) {
+            employeeRepository.findByEmailIgnoreCase(employee.getEmail()).ifPresent(existing -> {
+                if (currentEmployeeId == null || !existing.getId().equals(currentEmployeeId)) {
+                    throw new IllegalArgumentException("Email already exists");
+                }
+            });
+        }
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }

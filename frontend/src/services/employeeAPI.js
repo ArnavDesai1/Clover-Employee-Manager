@@ -29,8 +29,12 @@ export const employeeAPI = {
   },
 
   // Create new employee
-  createEmployee: (employee) => {
-    return axiosInstance.post('/employees', employee);
+  createEmployee: (employee, options = {}) => {
+    return axiosInstance.post('/employees', employee, {
+      params: {
+        selfRegistration: options.selfRegistration ? 'true' : 'false',
+      },
+    });
   },
 
   // Update employee
@@ -41,6 +45,15 @@ export const employeeAPI = {
   // Delete employee
   deleteEmployee: (id) => {
     return axiosInstance.delete(`/employees/${id}`);
+  },
+
+  // Pending employee applications (for admin approval)
+  getPendingEmployees: () => {
+    return axiosInstance.get('/employees/pending');
+  },
+
+  approveEmployee: (id) => {
+    return axiosInstance.put(`/employees/${id}/approve`);
   },
 
   // Upload profile picture

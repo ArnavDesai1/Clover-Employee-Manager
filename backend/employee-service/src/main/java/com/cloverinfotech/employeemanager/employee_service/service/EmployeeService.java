@@ -9,7 +9,11 @@ public interface EmployeeService {
 
     Employee createEmployee(Employee employee);
 
+    Employee createEmployee(Employee employee, boolean selfRegistration);
+
     List<Employee> getAllEmployees();
+
+    List<Employee> getPendingEmployees();
 
     Employee getEmployeeById(Long id);
 
@@ -17,6 +21,8 @@ public interface EmployeeService {
     Employee getEmployeeByEmail(String email);
 
     Employee updateEmployee(Long id, Employee employee);
+
+    Employee approveEmployee(Long id);
 
     void deleteEmployee(Long id);
 

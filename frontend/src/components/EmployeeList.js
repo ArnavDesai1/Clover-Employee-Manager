@@ -5,6 +5,7 @@ import './EmployeeList.css';
 
 const EmployeeList = ({ refresh }) => {
   const [employees, setEmployees] = useState([]);
+  const [pendingEmployees, setPendingEmployees] = useState([]);
   const [expandedIds, setExpandedIds] = useState(new Set());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -21,6 +22,8 @@ const EmployeeList = ({ refresh }) => {
       const response = await employeeAPI.getAllEmployees();
       const sorted = [...(response.data || [])].sort((a, b) => (b.id || 0) - (a.id || 0));
       setEmployees(sorted);
+      const pendingRes = await employeeAPI.getPendingEmployees();
+      setPendingEmployees([...(pendingRes.data || [])].sort((a, b) => (b.id || 0) - (a.id || 0)));
     } catch (err) {
       setError('Failed to fetch employees');
     } finally {
@@ -55,6 +58,15 @@ const EmployeeList = ({ refresh }) => {
     });
   };
 
+  const handleApprove = async (id) => {
+    try {
+      await employeeAPI.approveEmployee(id);
+      fetchEmployees();
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Failed to approve employee');
+    }
+  };
+
   return (
     <div className="container">
       <div className="list-header">
@@ -63,6 +75,25 @@ const EmployeeList = ({ refresh }) => {
           + Add New Employee
         </button>
       </div>
+
+      {pendingEmployees.length > 0 && (
+        <div className="pending-approvals">
+          <h3>Pending Approvals ({pendingEmployees.length})</h3>
+          <div className="pending-list">
+            {pendingEmployees.map((p) => (
+              <div key={p.id} className="pending-item">
+                <div>
+                  <strong>{p.name}</strong>
+                  <div>{p.email || 'No email provided'}</div>
+                </div>
+                <button className="btn-edit" onClick={() => handleApprove(p.id)}>
+                  Approve
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {error && <div className="error-message">{error}</div>}
 

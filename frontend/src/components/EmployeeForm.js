@@ -3,7 +3,11 @@ import { employeeAPI } from '../services/employeeAPI';
 import { useNavigate, useParams } from 'react-router-dom';
 import '../styles/EmployeeForm.css';
 
-function EmployeeForm() {
+function EmployeeForm({
+  selfRegisterEmail = '',
+  onEmployeeAdded,
+  onSuccessRedirect = '/',
+}) {
   const [formData, setFormData] = useState({
     name: '',
     role: '',
@@ -28,6 +32,7 @@ function EmployeeForm() {
 
   const navigate = useNavigate();
   const { id } = useParams();
+  const isSelfRegistration = !id && !!selfRegisterEmail;
 
   const states = [
     'Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh',
@@ -58,6 +63,15 @@ function EmployeeForm() {
   useEffect(() => {
     if (id) loadEmployee();
   }, [id, loadEmployee]);
+
+  useEffect(() => {
+    if (!isSelfRegistration) return;
+    setFormData((prev) => ({
+      ...prev,
+      email: selfRegisterEmail.trim().toLowerCase(),
+      role: 'Employee',
+    }));
+  }, [isSelfRegistration, selfRegisterEmail]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -94,16 +108,19 @@ function EmployeeForm() {
           await employeeAPI.uploadAddressProof(id, addressProof, addressProof.type);
         }
       } else {
-        response = await employeeAPI.createEmployee(formData);
+        response = await employeeAPI.createEmployee(formData, {
+          selfRegistration: isSelfRegistration,
+        });
         if (profilePicture)
           await employeeAPI.uploadProfilePicture(response.data.id, profilePicture);
         if (addressProof)
           await employeeAPI.uploadAddressProof(response.data.id, addressProof, addressProof.type);
       }
-      setSuccess('Employee saved successfully!');
-      setTimeout(() => navigate('/'), 2000);
+      setSuccess(isSelfRegistration ? 'Application submitted for admin approval.' : 'Employee saved successfully!');
+      if (onEmployeeAdded) onEmployeeAdded(response?.data);
+      setTimeout(() => navigate(onSuccessRedirect), 1500);
     } catch (err) {
-      setError('Failed to save employee');
+      setError(err?.response?.data?.message || 'Failed to save employee');
     }
   };
 
@@ -130,12 +147,20 @@ function EmployeeForm() {
       {success && <div className="success-message">{success}</div>}
 
       <form onSubmit={handleSubmit} className="employee-form">
-        <input name="name" placeholder="Full Name" value={formData.name} onChange={handleChange} required />
-        <input name="role" placeholder="Role" value={formData.role} onChange={handleChange} required />
-        <input type="date" name="birthdate" value={formData.birthdate} onChange={handleChange} />
+        <input name="name" placeholder="Full Name *" value={formData.name} onChange={handleChange} required />
+        <input
+          name="role"
+          placeholder="Role *"
+          value={formData.role}
+          onChange={handleChange}
+          required
+          readOnly={isSelfRegistration}
+          className={isSelfRegistration ? 'form-input-readonly' : ''}
+        />
+        <input type="date" name="birthdate" value={formData.birthdate} onChange={handleChange} required />
 
-        <select name="gender" value={formData.gender} onChange={handleChange}>
-          <option value="">Select Gender</option>
+        <select name="gender" value={formData.gender} onChange={handleChange} required>
+          <option value="">Select Gender *</option>
           <option>Male</option>
           <option>Female</option>
           <option>Other</option>
@@ -158,17 +183,27 @@ function EmployeeForm() {
           </div>
         </div>
 
-        <input name="address1" placeholder="Address Line 1" value={formData.address1} onChange={handleChange} />
+        <input name="address1" placeholder="Address Line 1 *" value={formData.address1} onChange={handleChange} required />
         <input name="address2" placeholder="Address Line 2" value={formData.address2} onChange={handleChange} />
-        <input name="city" placeholder="City" value={formData.city} onChange={handleChange} />
+        <input name="city" placeholder="City *" value={formData.city} onChange={handleChange} required />
 
-        <select name="state" value={formData.state} onChange={handleChange}>
-          <option value="">Select State</option>
+        <select name="state" value={formData.state} onChange={handleChange} required>
+          <option value="">Select State *</option>
           {states.map(s => <option key={s}>{s}</option>)}
         </select>
 
-        <input name="pin" placeholder="PIN Code" value={formData.pin} onChange={handleChange} />
-        <input name="pan" placeholder="PAN" value={formData.pan} onChange={handleChange} />
+        <input name="pin" placeholder="PIN Code *" value={formData.pin} onChange={handleChange} required />
+        <input name="pan" placeholder="PAN *" value={formData.pan} onChange={handleChange} required />
+
+        {isSelfRegistration && (
+          <input
+            name="email"
+            placeholder="Email"
+            value={formData.email}
+            readOnly
+            className="form-input-readonly"
+          />
+        )}
 
         <div className="file-upload">
           <label>Profile Picture</label>

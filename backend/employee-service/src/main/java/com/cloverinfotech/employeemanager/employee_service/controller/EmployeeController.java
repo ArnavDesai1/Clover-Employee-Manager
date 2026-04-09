@@ -12,10 +12,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/employees")
-@CrossOrigin(origins = {
-        "http://localhost:3000",
-        "https://clover-employee-manager.vercel.app"
-})
 public class EmployeeController {
 
     private final EmployeeService employeeService;
@@ -27,8 +23,10 @@ public class EmployeeController {
     // ================= CRUD =================
 
     @PostMapping
-    public Employee createEmployee(@RequestBody Employee employee) {
-        return employeeService.createEmployee(employee);
+    public Employee createEmployee(
+            @RequestBody Employee employee,
+            @RequestParam(name = "selfRegistration", defaultValue = "false") boolean selfRegistration) {
+        return employeeService.createEmployee(employee, selfRegistration);
     }
 
     @GetMapping
@@ -36,12 +34,11 @@ public class EmployeeController {
         return employeeService.getAllEmployees();
     }
 
-    @GetMapping("/{id}")
-    public Employee getEmployeeById(@PathVariable Long id) {
-        return employeeService.getEmployeeById(id);
+    @GetMapping("/pending")
+    public List<Employee> getPendingEmployees() {
+        return employeeService.getPendingEmployees();
     }
 
-    /** For employee portal: get the employee record linked to this login email. */
     @GetMapping("/by-email")
     public ResponseEntity<Employee> getEmployeeByEmail(@RequestParam String email) {
         Employee employee = employeeService.getEmployeeByEmail(email);
@@ -51,9 +48,19 @@ public class EmployeeController {
         return ResponseEntity.ok(employee);
     }
 
+    @GetMapping("/{id}")
+    public Employee getEmployeeById(@PathVariable Long id) {
+        return employeeService.getEmployeeById(id);
+    }
+
     @PutMapping("/{id}")
     public Employee updateEmployee(@PathVariable Long id, @RequestBody Employee employee) {
         return employeeService.updateEmployee(id, employee);
+    }
+
+    @PutMapping("/{id}/approve")
+    public Employee approveEmployee(@PathVariable Long id) {
+        return employeeService.approveEmployee(id);
     }
 
     @DeleteMapping("/{id}")
