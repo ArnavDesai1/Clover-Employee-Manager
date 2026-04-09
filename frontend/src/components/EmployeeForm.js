@@ -69,7 +69,6 @@ function EmployeeForm({
     setFormData((prev) => ({
       ...prev,
       email: selfRegisterEmail.trim().toLowerCase(),
-      role: 'Employee',
     }));
   }, [isSelfRegistration, selfRegisterEmail]);
 
@@ -150,12 +149,10 @@ function EmployeeForm({
         <input name="name" placeholder="Full Name *" value={formData.name} onChange={handleChange} required />
         <input
           name="role"
-          placeholder="Role *"
+          placeholder={isSelfRegistration ? 'Requested Role *' : 'Role *'}
           value={formData.role}
           onChange={handleChange}
           required
-          readOnly={isSelfRegistration}
-          className={isSelfRegistration ? 'form-input-readonly' : ''}
         />
         <input type="date" name="birthdate" value={formData.birthdate} onChange={handleChange} required />
 

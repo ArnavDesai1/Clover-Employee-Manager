@@ -45,6 +45,19 @@
   box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
 }
 
+.list-toolbar {
+  margin-bottom: 20px;
+}
+
+.search-input {
+  width: min(560px, 100%);
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid #d2d8e0;
+  border-radius: 8px;
+  font-size: 15px;
+}
+
 .empty-state {
   background: white;
   padding: 80px 20px;
@@ -68,6 +81,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
   gap: 28px;
+  align-items: stretch;
 }
 
 .employee-card {
@@ -77,6 +91,8 @@
   overflow: hidden;
   transition: all 0.4s ease;
   border: 1px solid #f0e6eb;
+  display: flex;
+  flex-direction: column;
 }
 
 .employee-card:hover {
@@ -135,6 +151,7 @@
 .card-body {
   padding: 24px;
   background: linear-gradient(to bottom, #ffffff 0%, #fdfbfc 100%);
+  flex: 1;
 }
 
 .info-row {
@@ -197,6 +214,13 @@
   background: #97144D;
   color: white;
   text-decoration: none;
+}
+
+.file-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .card-actions {
@@ -344,6 +368,14 @@
   .btn-delete {
     width: 100%;
   }
+
+  .pending-item {
+    grid-template-columns: 1fr;
+  }
+
+  .file-actions {
+    justify-content: flex-start;
+  }
 }
 
 /* Preview Modal Styles */
@@ -440,13 +472,61 @@
 }
 
 .pending-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 14px;
   background: #fff;
   border: 1px solid #f1e2c2;
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 12px;
+}
+
+.pending-main {
+  display: grid;
+  gap: 8px;
+}
+
+.pending-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pending-id {
+  font-size: 13px;
+  color: #815300;
+}
+
+.pending-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: #5d5d5d;
+  font-size: 13px;
+}
+
+.pending-address {
+  font-size: 14px;
+  color: #4b2f00;
+}
+
+.pending-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.pending-role-label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: #5b3500;
+  font-weight: 700;
+}
+
+.pending-role-label input {
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid #e0cd9e;
+  border-radius: 6px;
 }
   

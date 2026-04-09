@@ -59,8 +59,10 @@ public class EmployeeController {
     }
 
     @PutMapping("/{id}/approve")
-    public Employee approveEmployee(@PathVariable Long id) {
-        return employeeService.approveEmployee(id);
+    public Employee approveEmployee(
+            @PathVariable Long id,
+            @RequestParam(name = "role", required = false) String role) {
+        return employeeService.approveEmployee(id, role);
     }
 
     @DeleteMapping("/{id}")

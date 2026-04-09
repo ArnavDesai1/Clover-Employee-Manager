@@ -52,8 +52,12 @@ export const employeeAPI = {
     return axiosInstance.get('/employees/pending');
   },
 
-  approveEmployee: (id) => {
-    return axiosInstance.put(`/employees/${id}/approve`);
+  approveEmployee: (id, role) => {
+    return axiosInstance.put(`/employees/${id}/approve`, null, {
+      params: {
+        role: role || undefined,
+      },
+    });
   },
 
   // Upload profile picture

@@ -22,7 +22,7 @@ public interface EmployeeService {
 
     Employee updateEmployee(Long id, Employee employee);
 
-    Employee approveEmployee(Long id);
+    Employee approveEmployee(Long id, String approvedRole);
 
     void deleteEmployee(Long id);
 

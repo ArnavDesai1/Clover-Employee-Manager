@@ -6,7 +6,9 @@ import './EmployeeList.css';
 const EmployeeList = ({ refresh }) => {
   const [employees, setEmployees] = useState([]);
   const [pendingEmployees, setPendingEmployees] = useState([]);
+  const [pendingRoleDrafts, setPendingRoleDrafts] = useState({});
   const [expandedIds, setExpandedIds] = useState(new Set());
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -19,11 +21,21 @@ const EmployeeList = ({ refresh }) => {
     setLoading(true);
     setError('');
     try {
-      const response = await employeeAPI.getAllEmployees();
-      const sorted = [...(response.data || [])].sort((a, b) => (b.id || 0) - (a.id || 0));
-      setEmployees(sorted);
-      const pendingRes = await employeeAPI.getPendingEmployees();
-      setPendingEmployees([...(pendingRes.data || [])].sort((a, b) => (b.id || 0) - (a.id || 0)));
+      const [approvedRes, pendingRes] = await Promise.all([
+        employeeAPI.getAllEmployees(),
+        employeeAPI.getPendingEmployees(),
+      ]);
+
+      const sortedApproved = [...(approvedRes.data || [])].sort((a, b) => (b.id || 0) - (a.id || 0));
+      const sortedPending = [...(pendingRes.data || [])].sort((a, b) => (b.id || 0) - (a.id || 0));
+
+      setEmployees(sortedApproved);
+      setPendingEmployees(sortedPending);
+      setPendingRoleDrafts(
+        Object.fromEntries(
+          sortedPending.map((employee) => [employee.id, employee.role || 'Employee'])
+        )
+      );
     } catch (err) {
       setError('Failed to fetch employees');
     } finally {
@@ -38,15 +50,37 @@ const EmployeeList = ({ refresh }) => {
     }
   };
 
-  const downloadFile = async (id, type) => {
+  const createObjectUrl = async (id, type) => {
     const res =
       type === 'profile'
         ? await employeeAPI.downloadProfilePicture(id)
         : await employeeAPI.downloadAddressProof(id);
 
     const blob = new Blob([res.data], { type: res.headers['content-type'] });
-    const url = URL.createObjectURL(blob);
-    window.open(url);
+    return {
+      url: URL.createObjectURL(blob),
+      contentType: res.headers['content-type'] || 'application/octet-stream',
+    };
+  };
+
+  const previewFile = async (id, type) => {
+    const { url } = await createObjectUrl(id, type);
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const downloadFile = async (id, type, nameHint = 'document') => {
+    const { url, contentType } = await createObjectUrl(id, type);
+    const ext =
+      contentType.includes('pdf') ? 'pdf' :
+      contentType.includes('png') ? 'png' :
+      contentType.includes('jpeg') || contentType.includes('jpg') ? 'jpg' : 'bin';
+
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `${nameHint}.${ext}`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
   };
 
   const toggleExpanded = (id) => {
@@ -60,12 +94,26 @@ const EmployeeList = ({ refresh }) => {
 
   const handleApprove = async (id) => {
     try {
-      await employeeAPI.approveEmployee(id);
+      await employeeAPI.approveEmployee(id, pendingRoleDrafts[id]);
       fetchEmployees();
     } catch (err) {
       setError(err?.response?.data?.message || 'Failed to approve employee');
     }
   };
+
+  const filteredEmployees = employees.filter((employee) => {
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return true;
+    return [
+      employee.name,
+      employee.role,
+      employee.city,
+      employee.email,
+      String(employee.id || ''),
+    ]
+      .filter(Boolean)
+      .some((value) => value.toLowerCase().includes(q));
+  });
 
   return (
     <div className="container">
@@ -76,19 +124,79 @@ const EmployeeList = ({ refresh }) => {
         </button>
       </div>
 
+      <div className="list-toolbar">
+        <input
+          type="text"
+          className="search-input"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Search by name, role, city, email, or ID..."
+        />
+      </div>
+
       {pendingEmployees.length > 0 && (
         <div className="pending-approvals">
           <h3>Pending Approvals ({pendingEmployees.length})</h3>
           <div className="pending-list">
-            {pendingEmployees.map((p) => (
-              <div key={p.id} className="pending-item">
-                <div>
-                  <strong>{p.name}</strong>
-                  <div>{p.email || 'No email provided'}</div>
+            {pendingEmployees.map((employee) => (
+              <div key={employee.id} className="pending-item">
+                <div className="pending-main">
+                  <div className="pending-title">
+                    <strong>{employee.name}</strong>
+                    <span className="pending-id">#{employee.id}</span>
+                  </div>
+                  <div className="pending-meta">
+                    <span>{employee.email || 'No email'}</span>
+                    <span>{employee.city || 'No city'}</span>
+                    <span>{employee.pan || 'No PAN'}</span>
+                  </div>
+                  <div className="pending-address">
+                    {[employee.address1, employee.address2, employee.city, employee.state, employee.pin]
+                      .filter(Boolean)
+                      .join(', ') || 'Address not provided'}
+                  </div>
                 </div>
-                <button className="btn-edit" onClick={() => handleApprove(p.id)}>
-                  Approve
-                </button>
+
+                <div className="pending-actions">
+                  <label className="pending-role-label">
+                    Role to approve
+                    <input
+                      type="text"
+                      value={pendingRoleDrafts[employee.id] || ''}
+                      onChange={(e) =>
+                        setPendingRoleDrafts((prev) => ({ ...prev, [employee.id]: e.target.value }))
+                      }
+                    />
+                  </label>
+                  {employee.profilePicturePath ? (
+                    <div className="file-actions">
+                      <button type="button" className="btn-link" onClick={() => previewFile(employee.id, 'profile')}>
+                        Preview Profile
+                      </button>
+                      <button type="button" className="btn-link" onClick={() => downloadFile(employee.id, 'profile', `profile_${employee.id}`)}>
+                        Download Profile
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="value value-muted">Profile not uploaded</span>
+                  )}
+
+                  {employee.addressProofPath ? (
+                    <div className="file-actions">
+                      <button type="button" className="btn-link" onClick={() => previewFile(employee.id, 'proof')}>
+                        Preview Proof
+                      </button>
+                      <button type="button" className="btn-link" onClick={() => downloadFile(employee.id, 'proof', `address_proof_${employee.id}`)}>
+                        Download Proof
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="value value-muted">Address proof not uploaded</span>
+                  )}
+                  <button className="btn-edit" onClick={() => handleApprove(employee.id)}>
+                    Approve Employee
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -99,29 +207,29 @@ const EmployeeList = ({ refresh }) => {
 
       {loading ? (
         <div className="loading">Loading...</div>
-      ) : error ? null : employees.length === 0 ? (
+      ) : error ? null : filteredEmployees.length === 0 ? (
         <div className="empty-state">
           <p>No employees found.</p>
         </div>
       ) : (
         <div className="employees-grid">
-          {employees.map((e) => (
-            <div key={e.id} className="employee-card">
+          {filteredEmployees.map((employee) => (
+            <div key={employee.id} className="employee-card">
               <div className="card-header">
-                <h3>{e.name}</h3>
-                <span className="role-badge">{e.role}</span>
+                <h3>{employee.name}</h3>
+                <span className="role-badge">{employee.role}</span>
               </div>
 
               <div className="card-body">
                 <div className="info-row">
                   <span className="label">ID:</span>
-                  <span className="value">#{e.id}</span>
+                  <span className="value">#{employee.id}</span>
                 </div>
 
-                {e.birthdate && (
+                {employee.birthdate && (
                   <div className="info-row">
                     <span className="label">Birthdate:</span>
-                    <span className="value">{e.birthdate}</span>
+                    <span className="value">{employee.birthdate}</span>
                   </div>
                 )}
 
@@ -130,56 +238,57 @@ const EmployeeList = ({ refresh }) => {
                   <button
                     type="button"
                     className="btn-link"
-                    onClick={() => toggleExpanded(e.id)}
+                    onClick={() => toggleExpanded(employee.id)}
                   >
-                    {expandedIds.has(e.id) ? 'View less' : 'View more'}
+                    {expandedIds.has(employee.id) ? 'View less' : 'View more'}
                   </button>
                 </div>
 
-                {expandedIds.has(e.id) && (
+                {expandedIds.has(employee.id) && (
                   <>
-                    {(e.address1 || e.city || e.pin) && (
+                    {(employee.address1 || employee.city || employee.pin) && (
                       <div className="info-row">
                         <span className="label">Address:</span>
                         <span className="value">
-                          {[e.address1, e.address2, e.city, e.state, e.pin]
+                          {[employee.address1, employee.address2, employee.city, employee.state, employee.pin]
                             .filter(Boolean)
                             .join(', ')}
                         </span>
                       </div>
                     )}
 
-                    {e.gender && (
+                    {employee.gender && (
                       <div className="info-row">
                         <span className="label">Gender:</span>
-                        <span className="value">{e.gender}</span>
+                        <span className="value">{employee.gender}</span>
                       </div>
                     )}
 
-                    {e.hobbies && (
+                    {employee.hobbies && (
                       <div className="info-row">
                         <span className="label">Hobbies:</span>
-                        <span className="value">{e.hobbies}</span>
+                        <span className="value">{employee.hobbies}</span>
                       </div>
                     )}
 
-                    {e.pan && (
+                    {employee.pan && (
                       <div className="info-row">
                         <span className="label">PAN:</span>
-                        <span className="value">{e.pan}</span>
+                        <span className="value">{employee.pan}</span>
                       </div>
                     )}
 
                     <div className="info-row">
                       <span className="label">Profile:</span>
-                      {e.profilePicturePath ? (
-                        <button
-                          type="button"
-                          className="btn-link"
-                          onClick={() => downloadFile(e.id, 'profile')}
-                        >
-                          Preview / Download
-                        </button>
+                      {employee.profilePicturePath ? (
+                        <div className="file-actions">
+                          <button type="button" className="btn-link" onClick={() => previewFile(employee.id, 'profile')}>
+                            Preview
+                          </button>
+                          <button type="button" className="btn-link" onClick={() => downloadFile(employee.id, 'profile', `profile_${employee.id}`)}>
+                            Download
+                          </button>
+                        </div>
                       ) : (
                         <span className="value value-muted">Not uploaded</span>
                       )}
@@ -187,14 +296,15 @@ const EmployeeList = ({ refresh }) => {
 
                     <div className="info-row">
                       <span className="label">Address Proof:</span>
-                      {e.addressProofPath ? (
-                        <button
-                          type="button"
-                          className="btn-link"
-                          onClick={() => downloadFile(e.id, 'proof')}
-                        >
-                          Preview / Download
-                        </button>
+                      {employee.addressProofPath ? (
+                        <div className="file-actions">
+                          <button type="button" className="btn-link" onClick={() => previewFile(employee.id, 'proof')}>
+                            Preview
+                          </button>
+                          <button type="button" className="btn-link" onClick={() => downloadFile(employee.id, 'proof', `address_proof_${employee.id}`)}>
+                            Download
+                          </button>
+                        </div>
                       ) : (
                         <span className="value value-muted">Not uploaded</span>
                       )}
@@ -204,10 +314,10 @@ const EmployeeList = ({ refresh }) => {
               </div>
 
               <div className="card-actions">
-                <button className="btn-edit" onClick={() => navigate(`/edit/${e.id}`)}>
+                <button className="btn-edit" onClick={() => navigate(`/edit/${employee.id}`)}>
                   Edit
                 </button>
-                <button className="btn-delete" onClick={() => handleDelete(e.id)}>
+                <button className="btn-delete" onClick={() => handleDelete(employee.id)}>
                   Delete
                 </button>
               </div>

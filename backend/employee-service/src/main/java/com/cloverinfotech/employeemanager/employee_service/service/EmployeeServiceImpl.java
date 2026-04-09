@@ -35,7 +35,9 @@ public class EmployeeServiceImpl implements EmployeeService {
         validateUnique(employee, null);
 
         if (selfRegistration) {
-            employee.setRole("Employee");
+            if (isBlank(employee.getRole())) {
+                employee.setRole("Employee");
+            }
             employee.setApprovalStatus("PENDING");
         } else if (employee.getApprovalStatus() == null || employee.getApprovalStatus().isBlank()) {
             employee.setApprovalStatus("APPROVED");
@@ -94,8 +96,11 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public Employee approveEmployee(Long id) {
+    public Employee approveEmployee(Long id, String approvedRole) {
         Employee employee = getEmployeeById(id);
+        if (!isBlank(approvedRole)) {
+            employee.setRole(approvedRole.trim());
+        }
         employee.setApprovalStatus("APPROVED");
         return employeeRepository.save(employee);
     }
