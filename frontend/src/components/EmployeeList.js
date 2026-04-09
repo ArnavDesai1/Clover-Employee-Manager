@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import employeeAPI from '../services/employeeAPI';
 import './EmployeeList.css';
 
-const API_BASE = process.env.REACT_APP_API_URL || '';
-
 const EmployeeList = ({ refresh }) => {
   const [employees, setEmployees] = useState([]);
   const [pendingEmployees, setPendingEmployees] = useState([]);
@@ -14,6 +12,12 @@ const EmployeeList = ({ refresh }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+
+  const hasUploadedFile = (pathValue) => {
+    if (!pathValue) return false;
+    const normalized = String(pathValue).trim().toLowerCase();
+    return normalized !== 'null' && normalized !== 'undefined' && normalized !== 'na' && normalized !== '-';
+  };
 
   useEffect(() => {
     fetchEmployees();
@@ -56,11 +60,19 @@ const EmployeeList = ({ refresh }) => {
     }
   };
 
-  const getFileUrl = (id, type) =>
-    `${API_BASE}/employees/${id}/${type === 'profile' ? 'profile-picture' : 'address-proof'}`;
-
-  const previewFile = (id, type) => {
-    window.open(getFileUrl(id, type), '_blank', 'noopener,noreferrer');
+  const previewFile = async (id, type) => {
+    try {
+      const res =
+        type === 'profile'
+          ? await employeeAPI.downloadProfilePicture(id)
+          : await employeeAPI.downloadAddressProof(id);
+      const contentType = res.headers['content-type'] || 'application/octet-stream';
+      const blob = new Blob([res.data], { type: contentType });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      setError('File is not available for preview.');
+    }
   };
 
   const downloadFile = async (id, type, nameHint = 'document') => {
@@ -86,7 +98,7 @@ const EmployeeList = ({ refresh }) => {
       anchor.remove();
       URL.revokeObjectURL(url);
     } catch (err) {
-      setError(err?.response?.data?.message || 'Failed to download file');
+      setError('File is not available for download.');
     }
   };
 
@@ -154,7 +166,7 @@ const EmployeeList = ({ refresh }) => {
                       .join(', ') || 'Address not provided'}
                   </div>
                   <div className="file-actions pending-file-actions">
-                    {employee.profilePicturePath ? (
+                    {hasUploadedFile(employee.profilePicturePath) ? (
                       <>
                         <button type="button" className="btn-link" onClick={() => previewFile(employee.id, 'profile')}>
                           Preview Profile
@@ -168,7 +180,7 @@ const EmployeeList = ({ refresh }) => {
                     )}
                   </div>
                   <div className="file-actions pending-file-actions">
-                    {employee.addressProofPath ? (
+                    {hasUploadedFile(employee.addressProofPath) ? (
                       <>
                         <button type="button" className="btn-link" onClick={() => previewFile(employee.id, 'proof')}>
                           Preview Proof
@@ -294,7 +306,7 @@ const EmployeeList = ({ refresh }) => {
                 )}
                 <div className="info-row">
                   <span className="label">Profile:</span>
-                  {selectedEmployee.profilePicturePath ? (
+                  {hasUploadedFile(selectedEmployee.profilePicturePath) ? (
                     <div className="file-actions">
                       <button type="button" className="btn-link" onClick={() => previewFile(selectedEmployee.id, 'profile')}>
                         Preview
@@ -309,7 +321,7 @@ const EmployeeList = ({ refresh }) => {
                 </div>
                 <div className="info-row">
                   <span className="label">Address Proof:</span>
-                  {selectedEmployee.addressProofPath ? (
+                  {hasUploadedFile(selectedEmployee.addressProofPath) ? (
                     <div className="file-actions">
                       <button type="button" className="btn-link" onClick={() => previewFile(selectedEmployee.id, 'proof')}>
                         Preview
