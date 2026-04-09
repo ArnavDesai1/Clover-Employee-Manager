@@ -11,12 +11,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 @Service
 public class EmployeeServiceImpl implements EmployeeService {
 
     private final EmployeeRepository employeeRepository;
     private static final String UPLOAD_DIR = "uploads";
+    private static final Pattern PAN_PATTERN = Pattern.compile("^[A-Z]{5}[0-9]{4}[A-Z]$");
 
     public EmployeeServiceImpl(EmployeeRepository employeeRepository) {
         this.employeeRepository = employeeRepository;
@@ -202,6 +204,13 @@ public class EmployeeServiceImpl implements EmployeeService {
         if (isBlank(employee.getState())) throw new IllegalArgumentException("State is required");
         if (isBlank(employee.getPin())) throw new IllegalArgumentException("PIN code is required");
         if (isBlank(employee.getPan())) throw new IllegalArgumentException("PAN is required");
+        validatePan(employee.getPan());
+    }
+
+    private void validatePan(String pan) {
+        if (!PAN_PATTERN.matcher(pan).matches()) {
+            throw new IllegalArgumentException("Invalid PAN format. Use 5 letters, 4 digits, 1 letter (example: ABCDE1234F).");
+        }
     }
 
     private void validateUnique(Employee employee, Long currentEmployeeId) {

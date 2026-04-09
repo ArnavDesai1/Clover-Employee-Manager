@@ -72,6 +72,12 @@ const EmployeeList = ({ refresh }) => {
   };
 
   const previewFile = async (id, type, onError) => {
+    const previewTab = window.open('', '_blank', 'noopener,noreferrer');
+    if (!previewTab) {
+      if (onError) onError('Preview was blocked by the browser. Please allow popups and try again.');
+      else setError('Preview was blocked by the browser. Please allow popups and try again.');
+      return;
+    }
     try {
       const res =
         type === 'profile'
@@ -80,8 +86,10 @@ const EmployeeList = ({ refresh }) => {
       const contentType = res.headers['content-type'] || 'application/octet-stream';
       const blob = new Blob([res.data], { type: contentType });
       const url = URL.createObjectURL(blob);
-      window.open(url, '_blank', 'noopener,noreferrer');
+      previewTab.location.href = url;
+      setTimeout(() => URL.revokeObjectURL(url), 60 * 1000);
     } catch (err) {
+      previewTab.close();
       if (onError) onError(`File is not available for ${type === 'profile' ? 'profile preview' : 'proof preview'}.`);
       else setError('File is not available for preview.');
     }
@@ -108,7 +116,7 @@ const EmployeeList = ({ refresh }) => {
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
-      URL.revokeObjectURL(url);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (err) {
       if (onError) onError(`File is not available for ${type === 'profile' ? 'profile download' : 'proof download'}.`);
       else setError('File is not available for download.');

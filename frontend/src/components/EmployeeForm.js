@@ -47,6 +47,7 @@ function EmployeeForm({
     'Reading','Gaming','Sports','Music','Art','Cooking',
     'Traveling','Photography','Writing','Coding'
   ];
+  const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
 
   const loadEmployee = useCallback(async () => {
     try {
@@ -82,6 +83,12 @@ function EmployeeForm({
       else hobbiesList = hobbiesList.filter(h => h !== value);
 
       setFormData(prev => ({ ...prev, hobbies: hobbiesList.join(',') }));
+    } else if (name === 'pan') {
+      const normalizedPan = (value || '')
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, '')
+        .slice(0, 10);
+      setFormData(prev => ({ ...prev, pan: normalizedPan }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
@@ -96,6 +103,13 @@ function EmployeeForm({
     e.preventDefault();
     setError(null);
     setSuccess(null);
+    setFileActionError({ profile: '', proof: '' });
+
+    const normalizedPan = (formData.pan || '').trim().toUpperCase();
+    if (!PAN_REGEX.test(normalizedPan)) {
+      setError('Invalid PAN format. Use 5 letters, 4 digits, 1 letter (example: ABCDE1234F).');
+      return;
+    }
 
     try {
       let response;
@@ -126,16 +140,27 @@ function EmployeeForm({
 
   const previewExistingFile = async (type) => {
     if (!id) return;
+    const previewTab = window.open('', '_blank', 'noopener,noreferrer');
+    if (!previewTab) {
+      setFileActionError((prev) => ({
+        ...prev,
+        [type]: 'Preview was blocked by the browser. Please allow popups and try again.',
+      }));
+      return;
+    }
     try {
       const res =
         type === 'profile'
           ? await employeeAPI.downloadProfilePicture(id)
           : await employeeAPI.downloadAddressProof(id);
 
-      const blob = new Blob([res.data], { type: res.headers['content-type'] });
+      const contentType = res.headers['content-type'] || 'application/octet-stream';
+      const blob = new Blob([res.data], { type: contentType });
       const url = URL.createObjectURL(blob);
-      window.open(url);
+      previewTab.location.href = url;
+      setTimeout(() => URL.revokeObjectURL(url), 60 * 1000);
     } catch {
+      previewTab.close();
       setFileActionError((prev) => ({
         ...prev,
         [type]: `Current ${type === 'profile' ? 'profile picture' : 'address proof'} is unavailable.`,
@@ -165,7 +190,7 @@ function EmployeeForm({
       document.body.appendChild(link);
       link.click();
       link.remove();
-      URL.revokeObjectURL(url);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch {
       setFileActionError((prev) => ({
         ...prev,
@@ -225,7 +250,16 @@ function EmployeeForm({
         </select>
 
         <input name="pin" placeholder="PIN Code *" value={formData.pin} onChange={handleChange} required />
-        <input name="pan" placeholder="PAN *" value={formData.pan} onChange={handleChange} required />
+        <input
+          name="pan"
+          placeholder="PAN *"
+          value={formData.pan}
+          onChange={handleChange}
+          required
+          maxLength={10}
+          pattern="[A-Za-z]{5}[0-9]{4}[A-Za-z]{1}"
+          title="PAN must be in format ABCDE1234F"
+        />
 
         {isSelfRegistration && (
           <input
