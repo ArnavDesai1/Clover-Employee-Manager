@@ -27,6 +27,7 @@ function EmployeeForm({
 
   const [profilePicture, setProfilePicture] = useState(null);
   const [addressProof, setAddressProof] = useState(null);
+  const [fileActionError, setFileActionError] = useState({ profile: '', proof: '' });
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
@@ -135,7 +136,41 @@ function EmployeeForm({
       const url = URL.createObjectURL(blob);
       window.open(url);
     } catch {
-      setError(`Failed to load current ${type === 'profile' ? 'profile picture' : 'address proof'}`);
+      setFileActionError((prev) => ({
+        ...prev,
+        [type]: `Current ${type === 'profile' ? 'profile picture' : 'address proof'} is unavailable.`,
+      }));
+    }
+  };
+
+  const downloadExistingFile = async (type) => {
+    if (!id) return;
+    try {
+      const res =
+        type === 'profile'
+          ? await employeeAPI.downloadProfilePicture(id)
+          : await employeeAPI.downloadAddressProof(id);
+
+      const contentType = res.headers['content-type'] || 'application/octet-stream';
+      const blob = new Blob([res.data], { type: contentType });
+      const url = URL.createObjectURL(blob);
+      const ext =
+        contentType.includes('pdf') ? 'pdf' :
+        contentType.includes('png') ? 'png' :
+        contentType.includes('jpeg') || contentType.includes('jpg') ? 'jpg' : 'bin';
+
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${type}_${id}.${ext}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setFileActionError((prev) => ({
+        ...prev,
+        [type]: `Current ${type === 'profile' ? 'profile picture' : 'address proof'} is unavailable.`,
+      }));
     }
   };
 
@@ -208,15 +243,25 @@ function EmployeeForm({
           {id && formData.profilePicturePath && (
             <div className="existing-file">
               <span className="existing-file-name">Current file: {formData.profilePicturePath}</span>
-              <button
-                type="button"
-                className="btn-link"
-                onClick={() => previewExistingFile('profile')}
-              >
-                Preview current
-              </button>
+              <div className="existing-file-actions">
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={() => previewExistingFile('profile')}
+                >
+                  Preview
+                </button>
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={() => downloadExistingFile('profile')}
+                >
+                  Download
+                </button>
+              </div>
             </div>
           )}
+          {fileActionError.profile && <div className="field-error">{fileActionError.profile}</div>}
         </div>
 
         <div className="file-upload">
@@ -225,15 +270,25 @@ function EmployeeForm({
           {id && formData.addressProofPath && (
             <div className="existing-file">
               <span className="existing-file-name">Current file: {formData.addressProofPath}</span>
-              <button
-                type="button"
-                className="btn-link"
-                onClick={() => previewExistingFile('proof')}
-              >
-                Preview current
-              </button>
+              <div className="existing-file-actions">
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={() => previewExistingFile('proof')}
+                >
+                  Preview
+                </button>
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={() => downloadExistingFile('proof')}
+                >
+                  Download
+                </button>
+              </div>
             </div>
           )}
+          {fileActionError.proof && <div className="field-error">{fileActionError.proof}</div>}
         </div>
 
         <button className="submit-btn">{id ? 'Update' : 'Create'} Employee</button>

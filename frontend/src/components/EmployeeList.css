@@ -464,6 +464,14 @@
   width: 100%;
 }
 
+.inline-file-error {
+  margin-top: -6px;
+  margin-bottom: 10px;
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .pending-approvals {
   background: #fffaf0;
   border: 1px solid #f3d9a3;

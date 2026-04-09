@@ -8,10 +8,21 @@ const EmployeeList = ({ refresh }) => {
   const [pendingEmployees, setPendingEmployees] = useState([]);
   const [pendingRoleDrafts, setPendingRoleDrafts] = useState({});
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [modalFileError, setModalFileError] = useState({ profile: '', proof: '' });
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+
+  const openDetailsModal = (employee) => {
+    setModalFileError({ profile: '', proof: '' });
+    setSelectedEmployee(employee);
+  };
+
+  const closeDetailsModal = () => {
+    setModalFileError({ profile: '', proof: '' });
+    setSelectedEmployee(null);
+  };
 
   const hasUploadedFile = (pathValue) => {
     if (!pathValue) return false;
@@ -60,7 +71,7 @@ const EmployeeList = ({ refresh }) => {
     }
   };
 
-  const previewFile = async (id, type) => {
+  const previewFile = async (id, type, onError) => {
     try {
       const res =
         type === 'profile'
@@ -71,11 +82,12 @@ const EmployeeList = ({ refresh }) => {
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank', 'noopener,noreferrer');
     } catch (err) {
-      setError('File is not available for preview.');
+      if (onError) onError(`File is not available for ${type === 'profile' ? 'profile preview' : 'proof preview'}.`);
+      else setError('File is not available for preview.');
     }
   };
 
-  const downloadFile = async (id, type, nameHint = 'document') => {
+  const downloadFile = async (id, type, nameHint = 'document', onError) => {
     try {
       const res =
         type === 'profile'
@@ -98,7 +110,8 @@ const EmployeeList = ({ refresh }) => {
       anchor.remove();
       URL.revokeObjectURL(url);
     } catch (err) {
-      setError('File is not available for download.');
+      if (onError) onError(`File is not available for ${type === 'profile' ? 'profile download' : 'proof download'}.`);
+      else setError('File is not available for download.');
     }
   };
 
@@ -258,7 +271,7 @@ const EmployeeList = ({ refresh }) => {
                   <button
                     type="button"
                     className="btn-link"
-                    onClick={() => setSelectedEmployee(employee)}
+                    onClick={() => openDetailsModal(employee)}
                   >
                     View more
                   </button>
@@ -279,11 +292,11 @@ const EmployeeList = ({ refresh }) => {
       )}
 
       {selectedEmployee && (
-        <div className="preview-modal-overlay" onClick={() => setSelectedEmployee(null)}>
+        <div className="preview-modal-overlay" onClick={closeDetailsModal}>
           <div className="preview-modal" onClick={(e) => e.stopPropagation()}>
             <div className="preview-header">
               <h3>{selectedEmployee.name} - Details</h3>
-              <button className="close-btn" onClick={() => setSelectedEmployee(null)}>×</button>
+              <button className="close-btn" onClick={closeDetailsModal}>×</button>
             </div>
             <div className="preview-content details-modal-content">
               <div className="details-grid">
@@ -308,10 +321,31 @@ const EmployeeList = ({ refresh }) => {
                   <span className="label">Profile:</span>
                   {hasUploadedFile(selectedEmployee.profilePicturePath) ? (
                     <div className="file-actions">
-                      <button type="button" className="btn-link" onClick={() => previewFile(selectedEmployee.id, 'profile')}>
+                      <button
+                        type="button"
+                        className="btn-link"
+                        onClick={() =>
+                          previewFile(
+                            selectedEmployee.id,
+                            'profile',
+                            (message) => setModalFileError((prev) => ({ ...prev, profile: message }))
+                          )
+                        }
+                      >
                         Preview
                       </button>
-                      <button type="button" className="btn-link" onClick={() => downloadFile(selectedEmployee.id, 'profile', `profile_${selectedEmployee.id}`)}>
+                      <button
+                        type="button"
+                        className="btn-link"
+                        onClick={() =>
+                          downloadFile(
+                            selectedEmployee.id,
+                            'profile',
+                            `profile_${selectedEmployee.id}`,
+                            (message) => setModalFileError((prev) => ({ ...prev, profile: message }))
+                          )
+                        }
+                      >
                         Download
                       </button>
                     </div>
@@ -319,14 +353,38 @@ const EmployeeList = ({ refresh }) => {
                     <span className="value value-muted">Not uploaded</span>
                   )}
                 </div>
+                {modalFileError.profile && (
+                  <div className="inline-file-error">{modalFileError.profile}</div>
+                )}
                 <div className="info-row">
                   <span className="label">Address Proof:</span>
                   {hasUploadedFile(selectedEmployee.addressProofPath) ? (
                     <div className="file-actions">
-                      <button type="button" className="btn-link" onClick={() => previewFile(selectedEmployee.id, 'proof')}>
+                      <button
+                        type="button"
+                        className="btn-link"
+                        onClick={() =>
+                          previewFile(
+                            selectedEmployee.id,
+                            'proof',
+                            (message) => setModalFileError((prev) => ({ ...prev, proof: message }))
+                          )
+                        }
+                      >
                         Preview
                       </button>
-                      <button type="button" className="btn-link" onClick={() => downloadFile(selectedEmployee.id, 'proof', `address_proof_${selectedEmployee.id}`)}>
+                      <button
+                        type="button"
+                        className="btn-link"
+                        onClick={() =>
+                          downloadFile(
+                            selectedEmployee.id,
+                            'proof',
+                            `address_proof_${selectedEmployee.id}`,
+                            (message) => setModalFileError((prev) => ({ ...prev, proof: message }))
+                          )
+                        }
+                      >
                         Download
                       </button>
                     </div>
@@ -334,6 +392,9 @@ const EmployeeList = ({ refresh }) => {
                     <span className="value value-muted">Not uploaded</span>
                   )}
                 </div>
+                {modalFileError.proof && (
+                  <div className="inline-file-error">{modalFileError.proof}</div>
+                )}
               </div>
             </div>
           </div>

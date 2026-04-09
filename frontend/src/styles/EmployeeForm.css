@@ -182,6 +182,11 @@
   word-break: break-all;
 }
 
+.employee-form .existing-file-actions {
+  display: flex;
+  gap: 10px;
+}
+
 .employee-form .existing-file .btn-link {
   background: none;
   border: none;
