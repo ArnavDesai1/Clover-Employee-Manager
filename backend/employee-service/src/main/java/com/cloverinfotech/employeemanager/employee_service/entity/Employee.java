@@ -62,7 +62,7 @@ public class Employee {
     @Column(name = "address_proof_content_type")
     private String addressProofContentType;
 
-    @Column(name = "approval_status", nullable = false)
+    @Column(name = "approval_status")
     private String approvalStatus = "APPROVED";
 
     // ===== Getters & Setters =====

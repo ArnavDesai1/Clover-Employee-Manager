@@ -10,4 +10,6 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     java.util.Optional<Employee> findByPanIgnoreCase(String pan);
 
     java.util.List<Employee> findByApprovalStatusIgnoreCase(String approvalStatus);
+
+    java.util.List<Employee> findByApprovalStatusIgnoreCaseOrApprovalStatusIsNull(String approvalStatus);
 }
