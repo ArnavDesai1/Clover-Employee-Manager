@@ -38,4 +38,25 @@ public class AuthController {
         Map<String, Object> result = authService.signIn(email, password);
         return ResponseEntity.ok(result);
     }
+
+    @GetMapping("/blocked-emails")
+    public ResponseEntity<Map<String, Object>> getBlockedEmails() {
+        return ResponseEntity.ok(Map.of("emails", authService.getBlockedEmails()));
+    }
+
+    @PostMapping("/blocked-emails")
+    public ResponseEntity<Map<String, Object>> blockEmail(@RequestBody Map<String, String> body) {
+        String email = body != null ? body.get("email") : null;
+        return ResponseEntity.ok(authService.blockEmail(email));
+    }
+
+    @DeleteMapping("/blocked-emails/{email}")
+    public ResponseEntity<Map<String, Object>> unblockEmail(@PathVariable String email) {
+        return ResponseEntity.ok(authService.unblockEmail(email));
+    }
+
+    @GetMapping("/blocked-check")
+    public ResponseEntity<Map<String, Object>> blockedCheck(@RequestParam String email) {
+        return ResponseEntity.ok(authService.checkBlocked(email));
+    }
 }

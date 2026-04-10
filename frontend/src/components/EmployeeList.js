@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import employeeAPI from '../services/employeeAPI';
+import authAPI from '../services/authAPI';
 import './EmployeeList.css';
 
 const EmployeeList = ({ refresh }) => {
   const [employees, setEmployees] = useState([]);
   const [pendingEmployees, setPendingEmployees] = useState([]);
   const [pendingRoleDrafts, setPendingRoleDrafts] = useState({});
+  const [blockedEmails, setBlockedEmails] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [modalFileError, setModalFileError] = useState({ profile: '', proof: '' });
   const [searchTerm, setSearchTerm] = useState('');
@@ -43,9 +45,10 @@ const EmployeeList = ({ refresh }) => {
     setLoading(true);
     setError('');
     try {
-      const [approvedRes, pendingRes] = await Promise.all([
+      const [approvedRes, pendingRes, blockedRes] = await Promise.all([
         employeeAPI.getAllEmployees(),
         employeeAPI.getPendingEmployees(),
+        authAPI.getBlockedEmails(),
       ]);
 
       const sortedApproved = [...(approvedRes.data || [])].sort((a, b) => (b.id || 0) - (a.id || 0));
@@ -61,10 +64,34 @@ const EmployeeList = ({ refresh }) => {
           ])
         )
       );
+      setBlockedEmails((blockedRes?.data?.emails || []).map((email) => (email || '').trim().toLowerCase()));
     } catch (err) {
       setError('Failed to fetch employees');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const isBlocked = (email) => {
+    const normalized = (email || '').trim().toLowerCase();
+    return !!normalized && blockedEmails.includes(normalized);
+  };
+
+  const handleBlockToggle = async (email) => {
+    const normalized = (email || '').trim().toLowerCase();
+    if (!normalized) {
+      setError('Employee email is required to block/unblock sign-in.');
+      return;
+    }
+    try {
+      if (isBlocked(normalized)) {
+        await authAPI.unblockEmail(normalized);
+      } else {
+        await authAPI.blockEmail(normalized);
+      }
+      fetchEmployees();
+    } catch {
+      setError('Failed to update blocklist.');
     }
   };
 
@@ -310,6 +337,9 @@ const EmployeeList = ({ refresh }) => {
               <div className="card-actions">
                 <button className="btn-edit" onClick={() => navigate(`/edit/${employee.id}`)}>
                   Edit
+                </button>
+                <button className="btn-delete" onClick={() => handleBlockToggle(employee.email)}>
+                  {isBlocked(employee.email) ? 'Unblock Login' : 'Block Login'}
                 </button>
                 <button className="btn-delete" onClick={() => handleDelete(employee.id)}>
                   Delete

@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { isBlockedEmail } from '../config/accessControl';
 
 // Local: empty = proxy to backend. Production (Vercel): set REACT_APP_API_URL to your Render backend URL.
 const API_BASE = process.env.REACT_APP_API_URL || '';
@@ -14,9 +13,6 @@ const axiosInstance = axios.create({
 export const authAPI = {
   // Sign in (email/password) – uses backend when available
   signIn: async (email, password) => {
-    if (isBlockedEmail(email)) {
-      return { data: { success: false, error: 'This account has been blocked. Contact admin.' } };
-    }
     try {
       const res = await axiosInstance.post('/api/auth/signin', { email, password });
       const data = res.data;
@@ -43,13 +39,20 @@ export const authAPI = {
     
     const email = googleCredential.email;
     const normalizedEmail = (email || '').trim().toLowerCase();
-    if (isBlockedEmail(normalizedEmail)) {
-      return {
-        data: {
-          success: false,
-          error: 'This account has been blocked. Contact admin.',
-        },
-      };
+    try {
+      const blockedRes = await axiosInstance.get('/api/auth/blocked-check', {
+        params: { email: normalizedEmail },
+      });
+      if (blockedRes?.data?.blocked) {
+        return {
+          data: {
+            success: false,
+            error: 'This account has been blocked. Contact admin.',
+          },
+        };
+      }
+    } catch {
+      // If check fails, continue to avoid locking out legit users due to transient errors.
     }
     const emailDomain = normalizedEmail.split('@')[1]?.toLowerCase();
     const isCloverEmail = emailDomain === 'cloverinfotech.com';
@@ -145,6 +148,18 @@ export const authAPI = {
     // TODO: Call backend to validate token and get user info
     // Example: return axiosInstance.get('/auth/me');
     return { data: { user: null } };
+  },
+
+  getBlockedEmails: async () => {
+    return axiosInstance.get('/api/auth/blocked-emails');
+  },
+
+  blockEmail: async (email) => {
+    return axiosInstance.post('/api/auth/blocked-emails', { email });
+  },
+
+  unblockEmail: async (email) => {
+    return axiosInstance.delete(`/api/auth/blocked-emails/${encodeURIComponent(email)}`);
   },
 };
 

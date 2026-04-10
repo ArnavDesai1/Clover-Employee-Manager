@@ -1,7 +1,9 @@
 package com.cloverinfotech.employeemanager.employee_service.service;
 
+import com.cloverinfotech.employeemanager.employee_service.entity.BlockedEmail;
 import com.cloverinfotech.employeemanager.employee_service.entity.PasswordResetToken;
 import com.cloverinfotech.employeemanager.employee_service.entity.User;
+import com.cloverinfotech.employeemanager.employee_service.repository.BlockedEmailRepository;
 import com.cloverinfotech.employeemanager.employee_service.repository.PasswordResetTokenRepository;
 import com.cloverinfotech.employeemanager.employee_service.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -9,7 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.Set;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -18,23 +20,26 @@ import java.util.UUID;
 public class AuthService {
 
     private static final int TOKEN_VALID_MINUTES = 60;
-    private static final Set<String> BLOCKED_EMAILS = Set.of(
+    private static final List<String> DEFAULT_BLOCKED_EMAILS = List.of(
             "arundange1612@gmail.com"
     );
-
     private final UserRepository userRepository;
+    private final BlockedEmailRepository blockedEmailRepository;
     private final PasswordResetTokenRepository tokenRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
 
     public AuthService(UserRepository userRepository,
+                       BlockedEmailRepository blockedEmailRepository,
                        PasswordResetTokenRepository tokenRepository,
                        EmailService emailService,
                        PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.blockedEmailRepository = blockedEmailRepository;
         this.tokenRepository = tokenRepository;
         this.emailService = emailService;
         this.passwordEncoder = passwordEncoder;
+        ensureDefaultBlockedEmails();
     }
 
     /**
@@ -147,7 +152,65 @@ public class AuthService {
         );
     }
 
+    public List<String> getBlockedEmails() {
+        return blockedEmailRepository.findAll()
+                .stream()
+                .map(BlockedEmail::getEmail)
+                .filter(e -> e != null && !e.isBlank())
+                .map(e -> e.trim().toLowerCase())
+                .sorted()
+                .toList();
+    }
+
+    @Transactional
+    public Map<String, Object> blockEmail(String email) {
+        String normalized = normalizeEmail(email);
+        if (normalized.isEmpty()) {
+            return Map.of("success", false, "error", "Email is required.");
+        }
+        if (blockedEmailRepository.existsByEmailIgnoreCase(normalized)) {
+            return Map.of("success", true, "message", "Email is already blocked.");
+        }
+        BlockedEmail blocked = new BlockedEmail();
+        blocked.setEmail(normalized);
+        blockedEmailRepository.save(blocked);
+        return Map.of("success", true, "message", "Email blocked successfully.");
+    }
+
+    @Transactional
+    public Map<String, Object> unblockEmail(String email) {
+        String normalized = normalizeEmail(email);
+        if (normalized.isEmpty()) {
+            return Map.of("success", false, "error", "Email is required.");
+        }
+        Optional<BlockedEmail> blockedOpt = blockedEmailRepository.findByEmailIgnoreCase(normalized);
+        if (blockedOpt.isPresent()) {
+            blockedEmailRepository.delete(blockedOpt.get());
+        }
+        return Map.of("success", true, "message", "Email unblocked successfully.");
+    }
+
+    public Map<String, Object> checkBlocked(String email) {
+        return Map.of("blocked", isBlocked(email));
+    }
+
     private boolean isBlocked(String email) {
-        return email != null && BLOCKED_EMAILS.contains(email.trim().toLowerCase());
+        String normalized = normalizeEmail(email);
+        return !normalized.isEmpty() && blockedEmailRepository.existsByEmailIgnoreCase(normalized);
+    }
+
+    private String normalizeEmail(String email) {
+        return email == null ? "" : email.trim().toLowerCase();
+    }
+
+    private void ensureDefaultBlockedEmails() {
+        for (String email : DEFAULT_BLOCKED_EMAILS) {
+            String normalized = normalizeEmail(email);
+            if (!normalized.isEmpty() && !blockedEmailRepository.existsByEmailIgnoreCase(normalized)) {
+                BlockedEmail blocked = new BlockedEmail();
+                blocked.setEmail(normalized);
+                blockedEmailRepository.save(blocked);
+            }
+        }
     }
 }
