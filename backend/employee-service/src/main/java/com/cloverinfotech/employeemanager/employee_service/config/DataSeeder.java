@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -30,6 +31,8 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        ensureEmailsForExistingEmployees();
+
         if (!seedEnabled) {
             System.out.println("🌱 Demo seeding disabled (app.seed.enabled=false). Skipping seed.");
             return;
@@ -178,5 +181,59 @@ public class DataSeeder implements CommandLineRunner {
         emp.setAddressProofPath(addressProofPath);
         emp.setAddressProofType(addressProofType);
         return emp;
+    }
+
+    private void ensureEmailsForExistingEmployees() {
+        List<Employee> allEmployees = employeeRepository.findAll();
+        if (allEmployees.isEmpty()) return;
+
+        Set<String> usedEmails = new HashSet<>();
+        for (Employee employee : allEmployees) {
+            String normalized = normalizeEmail(employee.getEmail());
+            if (!normalized.isBlank()) {
+                usedEmails.add(normalized);
+            }
+        }
+
+        int updated = 0;
+        for (Employee employee : allEmployees) {
+            if (!normalizeEmail(employee.getEmail()).isBlank()) continue;
+
+            String generated = generateDemoEmail(employee, usedEmails);
+            employee.setEmail(generated);
+            usedEmails.add(generated);
+            updated++;
+        }
+
+        if (updated > 0) {
+            employeeRepository.saveAll(allEmployees);
+            System.out.println("Backfilled demo emails for " + updated + " existing employees.");
+        }
+    }
+
+    private String normalizeEmail(String email) {
+        return email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String generateDemoEmail(Employee employee, Set<String> usedEmails) {
+        String baseName = (employee.getName() == null || employee.getName().isBlank())
+                ? "employee"
+                : employee.getName()
+                    .trim()
+                    .toLowerCase(Locale.ROOT)
+                    .replaceAll("[^a-z0-9]+", ".")
+                    .replaceAll("^\\.+|\\.+$", "");
+
+        if (baseName.isBlank()) baseName = "employee";
+
+        String employeeId = employee.getId() == null ? "new" : String.valueOf(employee.getId());
+        String email = baseName + "." + employeeId + "@demo.cloverinfotech.com";
+        if (!usedEmails.contains(email)) return email;
+
+        int suffix = 2;
+        while (usedEmails.contains(baseName + "." + employeeId + "." + suffix + "@demo.cloverinfotech.com")) {
+            suffix++;
+        }
+        return baseName + "." + employeeId + "." + suffix + "@demo.cloverinfotech.com";
     }
 }

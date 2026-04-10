@@ -189,7 +189,7 @@ const EmployeeList = ({ refresh }) => {
   const filteredEmployees = employees.filter((employee) => {
     const q = searchTerm.trim().toLowerCase();
     if (!q) return true;
-    return [employee.name, employee.email]
+    return [employee.name, employee.email, employee.role]
       .filter(Boolean)
       .some((value) => value.toLowerCase().includes(q));
   });
@@ -209,7 +209,7 @@ const EmployeeList = ({ refresh }) => {
           className="search-input"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Search by name or email..."
+          placeholder="Search by name, role, or email..."
         />
       </div>
 
