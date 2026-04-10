@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { isBlockedEmail } from '../config/accessControl';
 
 // Local: empty = proxy to backend. Production (Vercel): set REACT_APP_API_URL to your Render backend URL.
 const API_BASE = process.env.REACT_APP_API_URL || '';
@@ -13,6 +14,9 @@ const axiosInstance = axios.create({
 export const authAPI = {
   // Sign in (email/password) – uses backend when available
   signIn: async (email, password) => {
+    if (isBlockedEmail(email)) {
+      return { data: { success: false, error: 'This account has been blocked. Contact admin.' } };
+    }
     try {
       const res = await axiosInstance.post('/api/auth/signin', { email, password });
       const data = res.data;
@@ -39,6 +43,14 @@ export const authAPI = {
     
     const email = googleCredential.email;
     const normalizedEmail = (email || '').trim().toLowerCase();
+    if (isBlockedEmail(normalizedEmail)) {
+      return {
+        data: {
+          success: false,
+          error: 'This account has been blocked. Contact admin.',
+        },
+      };
+    }
     const emailDomain = normalizedEmail.split('@')[1]?.toLowerCase();
     const isCloverEmail = emailDomain === 'cloverinfotech.com';
 
@@ -46,7 +58,6 @@ export const authAPI = {
     const allowlistedUsers = [
       { email: 'theelemental0@gmail.com', role: 'Admin' },
       { email: 'arnav.desai@somaiya.edu', role: 'Employee' },
-      { email: 'arundange1612@gmail.com', role: 'Employee' },
     ];
     const allowlisted = allowlistedUsers.find((u) => u.email === normalizedEmail);
     const isAllowed = isCloverEmail || !!allowlisted;

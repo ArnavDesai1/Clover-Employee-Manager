@@ -10,6 +10,7 @@ import ForgotPassword from './components/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
 import ProtectedRoute from './components/ProtectedRoute';
 import ProfileIcon from './components/ProfileIcon';
+import { BLOCKED_EMAILS } from './config/accessControl';
 
 const Navbar = () => {
   const location = useLocation();
@@ -19,6 +20,7 @@ const Navbar = () => {
   if (isAuthPage) return null;
 
   const isEmployee = user?.role === 'Employee';
+  const isAdmin = user?.role === 'Admin';
 
   return (
     <nav className="navbar">
@@ -31,6 +33,11 @@ const Navbar = () => {
           </div>
         </div>
         <div className="navbar-right">
+          {isAdmin && (
+            <div className="nav-link" title="Temporarily blocked sign-in emails">
+              Blocklist: {BLOCKED_EMAILS.length}
+            </div>
+          )}
           <ul className="nav-links">
             {isEmployee ? (
               <li>

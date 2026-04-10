@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Set;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -17,6 +18,9 @@ import java.util.UUID;
 public class AuthService {
 
     private static final int TOKEN_VALID_MINUTES = 60;
+    private static final Set<String> BLOCKED_EMAILS = Set.of(
+            "arundange1612@gmail.com"
+    );
 
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository tokenRepository;
@@ -43,6 +47,9 @@ public class AuthService {
         String normalized = (email != null) ? email.trim().toLowerCase() : "";
         String message = "If an account exists with this email, you'll receive reset instructions shortly.";
         if (normalized.isEmpty()) {
+            return Map.of("success", "true", "message", message);
+        }
+        if (isBlocked(normalized)) {
             return Map.of("success", "true", "message", message);
         }
 
@@ -94,6 +101,10 @@ public class AuthService {
             return Map.of("success", false, "error", "Account not found.");
         }
         User user = userOpt.get();
+        if (isBlocked(user.getEmail())) {
+            tokenRepository.delete(prt);
+            return Map.of("success", false, "error", "This account has been blocked. Contact admin.");
+        }
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         userRepository.save(user);
         tokenRepository.delete(prt);
@@ -107,6 +118,9 @@ public class AuthService {
         String normalized = (email != null) ? email.trim().toLowerCase() : "";
         if (normalized.isEmpty() || password == null) {
             return Map.of("success", false, "error", "Email and password are required.");
+        }
+        if (isBlocked(normalized)) {
+            return Map.of("success", false, "error", "This account has been blocked. Contact admin.");
         }
         Optional<User> userOpt = userRepository.findByEmailIgnoreCase(normalized);
         if (userOpt.isEmpty()) {
@@ -131,5 +145,9 @@ public class AuthService {
                 "organization", "Clover Infotech"
             )
         );
+    }
+
+    private boolean isBlocked(String email) {
+        return email != null && BLOCKED_EMAILS.contains(email.trim().toLowerCase());
     }
 }
