@@ -222,12 +222,11 @@ const EmployeeList = ({ refresh, onManualRefresh }) => {
       .some((value) => value.toLowerCase().includes(q));
   });
 
-  const availableInitials = [...new Set(employees.map(getInitialLetter))]
-    .sort((a, b) => {
-      if (a === '#') return 1;
-      if (b === '#') return -1;
-      return a.localeCompare(b);
-    });
+  const initialsInData = new Set(employees.map(getInitialLetter));
+  const availableInitials = [
+    ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
+    ...(initialsInData.has('#') ? ['#'] : []),
+  ];
 
   const filteredEmployees = alphaFilter
     ? searchFilteredEmployees.filter((employee) => getInitialLetter(employee) === alphaFilter)
@@ -417,9 +416,10 @@ const EmployeeList = ({ refresh, onManualRefresh }) => {
               <button
                 key={letter}
                 type="button"
-                className={`alphabet-circle ${alphaFilter === letter ? 'active' : ''}`}
+                className={`alphabet-circle ${alphaFilter === letter ? 'active' : ''} ${!initialsInData.has(letter) ? 'disabled' : ''}`}
                 onClick={() => setAlphaFilter(letter)}
                 title={`Show names starting with ${letter}`}
+                disabled={!initialsInData.has(letter)}
               >
                 {letter}
               </button>

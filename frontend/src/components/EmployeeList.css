@@ -94,25 +94,25 @@
 .alphabet-rail {
   position: sticky;
   top: 106px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 5px;
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid #ead8e1;
-  border-radius: 999px;
-  padding: 8px 6px;
+  border-radius: 14px;
+  padding: 8px;
   box-shadow: 0 4px 12px rgba(151, 20, 77, 0.12);
 }
 
 .alphabet-circle {
-  min-height: 28px;
-  min-width: 28px;
+  min-height: 24px;
+  min-width: 24px;
   padding: 0;
   border-radius: 999px;
   border: 1px solid #c89ab0;
   background: #fff;
   color: #7a1b46;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   line-height: 1;
 }
@@ -125,6 +125,11 @@
   background: #97144D;
   color: #fff;
   border-color: #97144D;
+}
+
+.alphabet-circle.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .empty-state {
@@ -148,8 +153,8 @@
 
 .employees-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-  gap: 28px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 22px;
   align-items: stretch;
 }
 
