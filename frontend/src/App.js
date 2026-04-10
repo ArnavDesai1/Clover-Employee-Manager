@@ -13,7 +13,7 @@ import ProfileIcon from './components/ProfileIcon';
 import authAPI from './services/authAPI';
 import employeeAPI from './services/employeeAPI';
 
-const Navbar = () => {
+const Navbar = ({ onDirectoryRefresh }) => {
   const location = useLocation();
   const { user } = useAuth();
   const isAuthPage = location.pathname === '/signin' || location.pathname === '/forgot-password' || location.pathname === '/reset-password';
@@ -97,6 +97,7 @@ const Navbar = () => {
       setBlockEmailInput('');
       setShowBlocklistSuggestions(false);
       await loadBlockedEmails();
+      if (onDirectoryRefresh) onDirectoryRefresh();
     } catch {
       setBlocklistError('Failed to block email.');
       setBlocklistLoading(false);
@@ -109,6 +110,7 @@ const Navbar = () => {
     try {
       await authAPI.unblockEmail(email);
       await loadBlockedEmails();
+      if (onDirectoryRefresh) onDirectoryRefresh();
     } catch {
       setBlocklistError('Failed to unblock email.');
       setBlocklistLoading(false);
@@ -268,15 +270,15 @@ const Navbar = () => {
 function App() {
   const [refresh, setRefresh] = useState(false);
 
-  const handleEmployeeAdded = () => {
-    setRefresh(!refresh);
+  const triggerDirectoryRefresh = () => {
+    setRefresh((prev) => !prev);
   };
 
   return (
     <AuthProvider>
       <Router>
         <div className="App">
-          <Navbar />
+          <Navbar onDirectoryRefresh={triggerDirectoryRefresh} />
 
           <Routes>
             <Route path="/signin" element={<SignIn />} />
@@ -294,7 +296,7 @@ function App() {
               path="/"
               element={
                 <ProtectedRoute requiredRole="Admin">
-                  <EmployeeList refresh={refresh} />
+                  <EmployeeList refresh={refresh} onManualRefresh={triggerDirectoryRefresh} />
                 </ProtectedRoute>
               }
             />
@@ -302,7 +304,7 @@ function App() {
               path="/add"
               element={
                 <ProtectedRoute requiredRole="Admin">
-                  <EmployeeForm onEmployeeAdded={handleEmployeeAdded} />
+                  <EmployeeForm onEmployeeAdded={triggerDirectoryRefresh} />
                 </ProtectedRoute>
               }
             />
@@ -310,7 +312,7 @@ function App() {
               path="/edit/:id"
               element={
                 <ProtectedRoute>
-                  <EmployeeForm onEmployeeAdded={handleEmployeeAdded} />
+                  <EmployeeForm onEmployeeAdded={triggerDirectoryRefresh} />
                 </ProtectedRoute>
               }
             />

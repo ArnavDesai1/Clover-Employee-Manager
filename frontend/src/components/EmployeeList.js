@@ -4,7 +4,7 @@ import employeeAPI from '../services/employeeAPI';
 import authAPI from '../services/authAPI';
 import './EmployeeList.css';
 
-const EmployeeList = ({ refresh }) => {
+const EmployeeList = ({ refresh, onManualRefresh }) => {
   const [employees, setEmployees] = useState([]);
   const [pendingEmployees, setPendingEmployees] = useState([]);
   const [pendingRoleDrafts, setPendingRoleDrafts] = useState({});
@@ -200,9 +200,23 @@ const EmployeeList = ({ refresh }) => {
     <div className="container">
       <div className="list-header">
         <h2>Employee Directory</h2>
-        <button className="btn-add" onClick={() => navigate('/add')}>
-          + Add New Employee
-        </button>
+        <div className="list-header-actions">
+          <button
+            type="button"
+            className="btn-refresh"
+            title="Refresh Directory"
+            aria-label="Refresh Directory"
+            onClick={() => {
+              fetchEmployees();
+              if (onManualRefresh) onManualRefresh();
+            }}
+          >
+            ↻
+          </button>
+          <button className="btn-add" onClick={() => navigate('/add')}>
+            + Add New Employee
+          </button>
+        </div>
       </div>
 
       <div className="list-toolbar">

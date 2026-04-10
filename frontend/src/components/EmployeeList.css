@@ -26,6 +26,32 @@
   letter-spacing: 0.5px;
 }
 
+.list-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-refresh {
+  min-height: 48px;
+  min-width: 48px;
+  padding: 0;
+  border-radius: 999px;
+  border: 2px solid #97144D;
+  background: #fff;
+  color: #97144D;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+}
+
+.btn-refresh:hover {
+  background: #97144D;
+  color: #fff;
+}
+
 .btn-add {
   background: linear-gradient(135deg, #28a745 0%, #218838 100%);
   padding: 14px 28px;
@@ -340,6 +366,14 @@
   .btn-add {
     width: 100%;
     justify-content: center;
+  }
+
+  .list-header-actions {
+    width: 100%;
+  }
+
+  .btn-refresh {
+    min-width: 46px;
   }
 
   .card-header {
