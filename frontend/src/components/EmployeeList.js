@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import employeeAPI from '../services/employeeAPI';
 import authAPI from '../services/authAPI';
@@ -12,8 +12,10 @@ const EmployeeList = ({ refresh, onManualRefresh }) => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [modalFileError, setModalFileError] = useState({ profile: '', proof: '' });
   const [searchTerm, setSearchTerm] = useState('');
+  const [alphaFilter, setAlphaFilter] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const alphabetRailRef = useRef(null);
   const navigate = useNavigate();
   const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -41,6 +43,23 @@ const EmployeeList = ({ refresh, onManualRefresh }) => {
   useEffect(() => {
     fetchEmployees();
   }, [refresh]);
+
+  useEffect(() => {
+    if (!alphaFilter) return;
+
+    const handleOutsideAlphabetClick = (event) => {
+      if (!alphabetRailRef.current || !alphabetRailRef.current.contains(event.target)) {
+        setAlphaFilter('');
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideAlphabetClick);
+    document.addEventListener('touchstart', handleOutsideAlphabetClick);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideAlphabetClick);
+      document.removeEventListener('touchstart', handleOutsideAlphabetClick);
+    };
+  }, [alphaFilter]);
 
   const fetchEmployees = async () => {
     setLoading(true);
@@ -188,13 +207,31 @@ const EmployeeList = ({ refresh, onManualRefresh }) => {
     }
   };
 
-  const filteredEmployees = employees.filter((employee) => {
+  const getInitialLetter = (employee) => {
+    const raw = (employee?.name || '').trim();
+    if (!raw) return '#';
+    const first = raw.charAt(0).toUpperCase();
+    return /^[A-Z]$/.test(first) ? first : '#';
+  };
+
+  const searchFilteredEmployees = employees.filter((employee) => {
     const q = searchTerm.trim().toLowerCase();
     if (!q) return true;
     return [employee.name, employee.email, employee.role]
       .filter(Boolean)
       .some((value) => value.toLowerCase().includes(q));
   });
+
+  const availableInitials = [...new Set(employees.map(getInitialLetter))]
+    .sort((a, b) => {
+      if (a === '#') return 1;
+      if (b === '#') return -1;
+      return a.localeCompare(b);
+    });
+
+  const filteredEmployees = alphaFilter
+    ? searchFilteredEmployees.filter((employee) => getInitialLetter(employee) === alphaFilter)
+    : searchFilteredEmployees;
 
   return (
     <div className="container">
@@ -319,59 +356,75 @@ const EmployeeList = ({ refresh, onManualRefresh }) => {
           <p>No employees found.</p>
         </div>
       ) : (
-        <div className="employees-grid">
-          {filteredEmployees.map((employee) => (
-            <div key={employee.id} className="employee-card">
-              <div className="card-header">
-                <h3>{employee.name}</h3>
-                <span className="role-badge">{employee.role}</span>
-              </div>
-
-              <div className="card-body">
-                <div className="info-row">
-                  <span className="label">ID:</span>
-                  <span className="value">#{employee.id}</span>
+        <div className="directory-layout">
+          <div className="employees-grid">
+            {filteredEmployees.map((employee) => (
+              <div key={employee.id} className="employee-card">
+                <div className="card-header">
+                  <h3>{employee.name}</h3>
+                  <span className="role-badge">{employee.role}</span>
                 </div>
 
-                {employee.birthdate && (
+                <div className="card-body">
                   <div className="info-row">
-                    <span className="label">Birthdate:</span>
-                    <span className="value">{employee.birthdate}</span>
+                    <span className="label">ID:</span>
+                    <span className="value">#{employee.id}</span>
                   </div>
-                )}
 
-                {employee.city && (
+                  {employee.birthdate && (
+                    <div className="info-row">
+                      <span className="label">Birthdate:</span>
+                      <span className="value">{employee.birthdate}</span>
+                    </div>
+                  )}
+
+                  {employee.city && (
+                    <div className="info-row">
+                      <span className="label">City:</span>
+                      <span className="value">{employee.city}</span>
+                    </div>
+                  )}
+
                   <div className="info-row">
-                    <span className="label">City:</span>
-                    <span className="value">{employee.city}</span>
+                    <span className="label">Details:</span>
+                    <button
+                      type="button"
+                      className="btn-link"
+                      onClick={() => openDetailsModal(employee)}
+                    >
+                      View more
+                    </button>
                   </div>
-                )}
+                </div>
 
-                <div className="info-row">
-                  <span className="label">Details:</span>
-                  <button
-                    type="button"
-                    className="btn-link"
-                    onClick={() => openDetailsModal(employee)}
-                  >
-                    View more
+                <div className="card-actions">
+                  <button type="button" className="btn-edit" onClick={() => navigate(`/edit/${employee.id}`)}>
+                    Edit
+                  </button>
+                  <button type="button" className="btn-delete" onClick={() => handleBlockToggle(employee.email)}>
+                    {isBlocked(employee.email) ? 'Unblock Login' : 'Block Login'}
+                  </button>
+                  <button type="button" className="btn-delete" onClick={() => handleDelete(employee.id)}>
+                    Delete
                   </button>
                 </div>
               </div>
+            ))}
+          </div>
 
-              <div className="card-actions">
-                <button type="button" className="btn-edit" onClick={() => navigate(`/edit/${employee.id}`)}>
-                  Edit
-                </button>
-                <button type="button" className="btn-delete" onClick={() => handleBlockToggle(employee.email)}>
-                  {isBlocked(employee.email) ? 'Unblock Login' : 'Block Login'}
-                </button>
-                <button type="button" className="btn-delete" onClick={() => handleDelete(employee.id)}>
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))}
+          <div className="alphabet-rail" ref={alphabetRailRef} aria-label="Filter by first letter">
+            {availableInitials.map((letter) => (
+              <button
+                key={letter}
+                type="button"
+                className={`alphabet-circle ${alphaFilter === letter ? 'active' : ''}`}
+                onClick={() => setAlphaFilter(letter)}
+                title={`Show names starting with ${letter}`}
+              >
+                {letter}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
