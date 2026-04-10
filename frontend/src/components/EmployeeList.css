@@ -18,6 +18,12 @@
   background: #D4AF37;
 }
 
+.list-header-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .list-header h2 {
   color: #97144D;
   font-size: 32px;
@@ -33,23 +39,32 @@
 }
 
 .btn-refresh {
-  min-height: 48px;
-  min-width: 48px;
+  min-height: 40px;
+  min-width: 40px;
   padding: 0;
   border-radius: 999px;
   border: 2px solid #97144D;
   background: #fff;
   color: #97144D;
-  font-size: 24px;
-  font-weight: 700;
-  line-height: 1;
   display: grid;
   place-items: center;
+  cursor: pointer;
+  transition: background 0.25s ease, color 0.25s ease, transform 0.25s ease;
+  flex-shrink: 0;
+}
+
+.btn-refresh svg {
+  display: block;
+  transition: transform 0.5s ease;
 }
 
 .btn-refresh:hover {
   background: #97144D;
   color: #fff;
+}
+
+.btn-refresh:hover svg {
+  transform: rotate(360deg);
 }
 
 .btn-add {
