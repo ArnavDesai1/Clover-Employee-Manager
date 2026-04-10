@@ -72,11 +72,11 @@ const EmployeeList = ({ refresh }) => {
   };
 
   const previewFile = async (id, type, onError) => {
-    const previewTab = window.open('', '_blank', 'noopener,noreferrer');
-    if (!previewTab) {
-      if (onError) onError('Preview was blocked by the browser. Please allow popups and try again.');
-      else setError('Preview was blocked by the browser. Please allow popups and try again.');
-      return;
+    const previewTab = window.open('about:blank', '_blank');
+    if (previewTab) {
+      try {
+        previewTab.opener = null;
+      } catch {}
     }
     try {
       const res =
@@ -86,10 +86,14 @@ const EmployeeList = ({ refresh }) => {
       const contentType = res.headers['content-type'] || 'application/octet-stream';
       const blob = new Blob([res.data], { type: contentType });
       const url = URL.createObjectURL(blob);
-      previewTab.location.href = url;
+      if (previewTab && !previewTab.closed) {
+        previewTab.location.href = url;
+      } else {
+        window.location.assign(url);
+      }
       setTimeout(() => URL.revokeObjectURL(url), 60 * 1000);
     } catch (err) {
-      previewTab.close();
+      if (previewTab && !previewTab.closed) previewTab.close();
       if (onError) onError(`File is not available for ${type === 'profile' ? 'profile preview' : 'proof preview'}.`);
       else setError('File is not available for preview.');
     }
