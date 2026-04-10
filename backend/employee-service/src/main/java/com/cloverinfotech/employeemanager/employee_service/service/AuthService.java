@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Service
 public class AuthService {
@@ -23,6 +24,7 @@ public class AuthService {
     private static final List<String> DEFAULT_BLOCKED_EMAILS = List.of(
             "arundange1612@gmail.com"
     );
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
     private final UserRepository userRepository;
     private final BlockedEmailRepository blockedEmailRepository;
     private final PasswordResetTokenRepository tokenRepository;
@@ -167,6 +169,9 @@ public class AuthService {
         String normalized = normalizeEmail(email);
         if (normalized.isEmpty()) {
             return Map.of("success", false, "error", "Email is required.");
+        }
+        if (!EMAIL_PATTERN.matcher(normalized).matches()) {
+            return Map.of("success", false, "error", "Enter a valid email address.");
         }
         if (blockedEmailRepository.existsByEmailIgnoreCase(normalized)) {
             return Map.of("success", true, "message", "Email is already blocked.");

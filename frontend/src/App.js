@@ -23,6 +23,7 @@ const Navbar = () => {
   const [blockEmailInput, setBlockEmailInput] = useState('');
   const [blocklistLoading, setBlocklistLoading] = useState(false);
   const [blocklistError, setBlocklistError] = useState('');
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
   const loadBlockedEmails = async () => {
     setBlocklistLoading(true);
@@ -52,7 +53,14 @@ const Navbar = () => {
 
   const handleBlockEmail = async () => {
     const email = (blockEmailInput || '').trim().toLowerCase();
-    if (!email) return;
+    if (!email) {
+      setBlocklistError('Email is required.');
+      return;
+    }
+    if (!EMAIL_REGEX.test(email)) {
+      setBlocklistError('Enter a valid email address.');
+      return;
+    }
     setBlocklistLoading(true);
     setBlocklistError('');
     try {

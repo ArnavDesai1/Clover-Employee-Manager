@@ -15,6 +15,7 @@ const EmployeeList = ({ refresh }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
   const openDetailsModal = (employee) => {
     setModalFileError({ profile: '', proof: '' });
@@ -51,20 +52,30 @@ const EmployeeList = ({ refresh }) => {
         authAPI.getBlockedEmails(),
       ]);
 
+      const normalizedBlockedEmails = (blockedRes?.data?.emails || [])
+        .map((email) => (email || '').trim().toLowerCase())
+        .filter(Boolean);
+
       const sortedApproved = [...(approvedRes.data || [])].sort((a, b) => (b.id || 0) - (a.id || 0));
       const sortedPending = [...(pendingRes.data || [])].sort((a, b) => (b.id || 0) - (a.id || 0));
+      const visibleApproved = sortedApproved.filter(
+        (employee) => !normalizedBlockedEmails.includes((employee?.email || '').trim().toLowerCase())
+      );
+      const visiblePending = sortedPending.filter(
+        (employee) => !normalizedBlockedEmails.includes((employee?.email || '').trim().toLowerCase())
+      );
 
-      setEmployees(sortedApproved);
-      setPendingEmployees(sortedPending);
+      setEmployees(visibleApproved);
+      setPendingEmployees(visiblePending);
       setPendingRoleDrafts(
         Object.fromEntries(
-          sortedPending.map((employee) => [
+          visiblePending.map((employee) => [
             employee.id,
             employee.requestedRole || employee.role || 'Employee',
           ])
         )
       );
-      setBlockedEmails((blockedRes?.data?.emails || []).map((email) => (email || '').trim().toLowerCase()));
+      setBlockedEmails(normalizedBlockedEmails);
     } catch (err) {
       setError('Failed to fetch employees');
     } finally {
@@ -81,6 +92,10 @@ const EmployeeList = ({ refresh }) => {
     const normalized = (email || '').trim().toLowerCase();
     if (!normalized) {
       setError('Employee email is required to block/unblock sign-in.');
+      return;
+    }
+    if (!EMAIL_REGEX.test(normalized)) {
+      setError('Employee must have a valid email to block/unblock sign-in.');
       return;
     }
     try {
@@ -174,13 +189,7 @@ const EmployeeList = ({ refresh }) => {
   const filteredEmployees = employees.filter((employee) => {
     const q = searchTerm.trim().toLowerCase();
     if (!q) return true;
-    return [
-      employee.name,
-      employee.role,
-      employee.city,
-      employee.email,
-      String(employee.id || ''),
-    ]
+    return [employee.name, employee.email]
       .filter(Boolean)
       .some((value) => value.toLowerCase().includes(q));
   });
@@ -200,7 +209,7 @@ const EmployeeList = ({ refresh }) => {
           className="search-input"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Search by name, role, city, email, or ID..."
+          placeholder="Search by name or email..."
         />
       </div>
 
@@ -335,13 +344,13 @@ const EmployeeList = ({ refresh }) => {
               </div>
 
               <div className="card-actions">
-                <button className="btn-edit" onClick={() => navigate(`/edit/${employee.id}`)}>
+                <button type="button" className="btn-edit" onClick={() => navigate(`/edit/${employee.id}`)}>
                   Edit
                 </button>
-                <button className="btn-delete" onClick={() => handleBlockToggle(employee.email)}>
+                <button type="button" className="btn-delete" onClick={() => handleBlockToggle(employee.email)}>
                   {isBlocked(employee.email) ? 'Unblock Login' : 'Block Login'}
                 </button>
-                <button className="btn-delete" onClick={() => handleDelete(employee.id)}>
+                <button type="button" className="btn-delete" onClick={() => handleDelete(employee.id)}>
                   Delete
                 </button>
               </div>
@@ -365,7 +374,10 @@ const EmployeeList = ({ refresh }) => {
                 {selectedEmployee.gender && <div className="info-row"><span className="label">Gender:</span><span className="value">{selectedEmployee.gender}</span></div>}
                 {selectedEmployee.hobbies && <div className="info-row"><span className="label">Hobbies:</span><span className="value">{selectedEmployee.hobbies}</span></div>}
                 {selectedEmployee.pan && <div className="info-row"><span className="label">PAN:</span><span className="value">{selectedEmployee.pan}</span></div>}
-                {selectedEmployee.email && <div className="info-row"><span className="label">Email:</span><span className="value">{selectedEmployee.email}</span></div>}
+                <div className="info-row">
+                  <span className="label">Email:</span>
+                  <span className="value">{selectedEmployee.email || 'Not available'}</span>
+                </div>
                 {(selectedEmployee.address1 || selectedEmployee.city || selectedEmployee.pin) && (
                   <div className="info-row">
                     <span className="label">Address:</span>

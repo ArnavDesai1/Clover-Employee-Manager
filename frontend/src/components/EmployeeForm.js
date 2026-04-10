@@ -51,6 +51,7 @@ function EmployeeForm({
     'Traveling','Photography','Writing','Coding'
   ];
   const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
   const loadEmployee = useCallback(async () => {
     try {
@@ -93,6 +94,8 @@ function EmployeeForm({
         .replace(/[^A-Z0-9]/g, '')
         .slice(0, 10);
       setFormData(prev => ({ ...prev, pan: normalizedPan }));
+    } else if (name === 'email') {
+      setFormData(prev => ({ ...prev, email: (value || '').trim().toLowerCase() }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
@@ -112,6 +115,11 @@ function EmployeeForm({
     const normalizedPan = (formData.pan || '').trim().toUpperCase();
     if (!PAN_REGEX.test(normalizedPan)) {
       setError('Invalid PAN format. Use 5 letters, 4 digits, 1 letter (example: ABCDE1234F).');
+      return;
+    }
+    const normalizedEmail = (formData.email || '').trim().toLowerCase();
+    if (!EMAIL_REGEX.test(normalizedEmail)) {
+      setError('Enter a valid email address.');
       return;
     }
 
@@ -303,15 +311,16 @@ function EmployeeForm({
           title="PAN must be in format ABCDE1234F"
         />
 
-        {isSelfRegistration && (
-          <input
-            name="email"
-            placeholder="Email"
-            value={formData.email}
-            readOnly
-            className="form-input-readonly"
-          />
-        )}
+        <input
+          name="email"
+          type="email"
+          placeholder="Email *"
+          value={formData.email}
+          onChange={handleChange}
+          required
+          readOnly={isSelfRegistration}
+          className={isSelfRegistration ? 'form-input-readonly' : ''}
+        />
 
         <div className="file-upload">
           <label>Profile Picture</label>

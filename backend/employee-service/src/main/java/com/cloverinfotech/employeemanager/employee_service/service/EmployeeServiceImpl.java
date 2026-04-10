@@ -19,6 +19,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     private final EmployeeRepository employeeRepository;
     private static final String UPLOAD_DIR = "uploads";
     private static final Pattern PAN_PATTERN = Pattern.compile("^[A-Z]{5}[0-9]{4}[A-Z]$");
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
     private static final String STATUS_PENDING = "PENDING";
     private static final String STATUS_APPROVED = "APPROVED";
 
@@ -226,12 +227,20 @@ public class EmployeeServiceImpl implements EmployeeService {
         if (isBlank(employee.getState())) throw new IllegalArgumentException("State is required");
         if (isBlank(employee.getPin())) throw new IllegalArgumentException("PIN code is required");
         if (isBlank(employee.getPan())) throw new IllegalArgumentException("PAN is required");
+        if (isBlank(employee.getEmail())) throw new IllegalArgumentException("Email is required");
         validatePan(employee.getPan());
+        validateEmail(employee.getEmail());
     }
 
     private void validatePan(String pan) {
         if (!PAN_PATTERN.matcher(pan).matches()) {
             throw new IllegalArgumentException("Invalid PAN format. Use 5 letters, 4 digits, 1 letter (example: ABCDE1234F).");
+        }
+    }
+
+    private void validateEmail(String email) {
+        if (!EMAIL_PATTERN.matcher(email).matches()) {
+            throw new IllegalArgumentException("Invalid email format.");
         }
     }
 
