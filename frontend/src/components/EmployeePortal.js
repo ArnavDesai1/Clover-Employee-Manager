@@ -73,7 +73,11 @@ const EmployeePortal = () => {
               {myEmployee.approvalStatus && myEmployee.approvalStatus.toUpperCase() === 'PENDING' && (
                 <div className="info-row">
                   <span className="label">Application</span>
-                  <span className="value">Pending admin approval</span>
+                  <span className="value">
+                    {myEmployee.requestedRole
+                      ? `Designation change to "${myEmployee.requestedRole}" is pending admin approval`
+                      : 'Pending admin approval'}
+                  </span>
                 </div>
               )}
               {myEmployee.birthdate && (

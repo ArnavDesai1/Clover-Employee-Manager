@@ -65,6 +65,9 @@ public class Employee {
     @Column(name = "approval_status")
     private String approvalStatus = "APPROVED";
 
+    @Column(name = "requested_role")
+    private String requestedRole;
+
     // ===== Getters & Setters =====
 
     public Long getId() {
@@ -209,5 +212,13 @@ public class Employee {
 
     public void setApprovalStatus(String approvalStatus) {
         this.approvalStatus = approvalStatus;
+    }
+
+    public String getRequestedRole() {
+        return requestedRole;
+    }
+
+    public void setRequestedRole(String requestedRole) {
+        this.requestedRole = requestedRole;
     }
 }

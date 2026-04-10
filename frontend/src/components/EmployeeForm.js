@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { employeeAPI } from '../services/employeeAPI';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import '../styles/EmployeeForm.css';
 
 function EmployeeForm({
@@ -28,11 +29,13 @@ function EmployeeForm({
   const [profilePicture, setProfilePicture] = useState(null);
   const [addressProof, setAddressProof] = useState(null);
   const [fileActionError, setFileActionError] = useState({ profile: '', proof: '' });
+  const [initialRole, setInitialRole] = useState('');
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
   const navigate = useNavigate();
   const { id } = useParams();
+  const { user } = useAuth();
   const isSelfRegistration = !id && !!selfRegisterEmail;
 
   const states = [
@@ -57,6 +60,7 @@ function EmployeeForm({
         ...res.data,
         hobbies: res.data?.hobbies || '',
       }));
+      setInitialRole((res.data?.role || '').trim());
     } catch {
       setError('Failed to load employee');
     }
@@ -114,7 +118,32 @@ function EmployeeForm({
     try {
       let response;
       if (id) {
-        await employeeAPI.updateEmployee(id, formData);
+        const loggedInEmail = (user?.email || '').trim().toLowerCase();
+        const editingEmail = (formData.email || '').trim().toLowerCase();
+        const isEmployeeEditingOwnProfile =
+          user?.role === 'Employee' &&
+          loggedInEmail &&
+          editingEmail &&
+          loggedInEmail === editingEmail;
+
+        if (user?.role === 'Employee' && !isEmployeeEditingOwnProfile) {
+          setError('You can only edit your own profile.');
+          return;
+        }
+
+        const nextRole = (formData.role || '').trim();
+        const roleChangedByEmployee =
+          isEmployeeEditingOwnProfile &&
+          !!initialRole &&
+          nextRole !== initialRole;
+
+        const updatePayload = roleChangedByEmployee
+          ? { ...formData, approvalStatus: 'PENDING' }
+          : formData;
+
+        await employeeAPI.updateEmployee(id, updatePayload, {
+          adminOverride: user?.role === 'Admin',
+        });
         if (profilePicture) {
           await employeeAPI.uploadProfilePicture(id, profilePicture);
         }
@@ -130,7 +159,18 @@ function EmployeeForm({
         if (addressProof)
           await employeeAPI.uploadAddressProof(response.data.id, addressProof, addressProof.type);
       }
-      setSuccess(isSelfRegistration ? 'Application submitted for admin approval.' : 'Employee saved successfully!');
+      const nextRole = (formData.role || '').trim();
+      const roleChangedByEmployee =
+        !!id &&
+        user?.role === 'Employee' &&
+        !!initialRole &&
+        nextRole !== initialRole;
+
+      setSuccess(
+        roleChangedByEmployee
+          ? 'Designation change submitted for admin approval.'
+          : (isSelfRegistration ? 'Application submitted for admin approval.' : 'Employee saved successfully!')
+      );
       if (onEmployeeAdded) onEmployeeAdded(response?.data);
       setTimeout(() => navigate(onSuccessRedirect), 1500);
     } catch (err) {

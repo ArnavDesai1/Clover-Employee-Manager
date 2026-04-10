@@ -54,8 +54,11 @@ public class EmployeeController {
     }
 
     @PutMapping("/{id}")
-    public Employee updateEmployee(@PathVariable Long id, @RequestBody Employee employee) {
-        return employeeService.updateEmployee(id, employee);
+    public Employee updateEmployee(
+            @PathVariable Long id,
+            @RequestBody Employee employee,
+            @RequestParam(name = "adminOverride", defaultValue = "false") boolean adminOverride) {
+        return employeeService.updateEmployee(id, employee, adminOverride);
     }
 
     @PutMapping("/{id}/approve")

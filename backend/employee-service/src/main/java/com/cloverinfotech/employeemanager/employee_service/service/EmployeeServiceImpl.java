@@ -19,6 +19,8 @@ public class EmployeeServiceImpl implements EmployeeService {
     private final EmployeeRepository employeeRepository;
     private static final String UPLOAD_DIR = "uploads";
     private static final Pattern PAN_PATTERN = Pattern.compile("^[A-Z]{5}[0-9]{4}[A-Z]$");
+    private static final String STATUS_PENDING = "PENDING";
+    private static final String STATUS_APPROVED = "APPROVED";
 
     public EmployeeServiceImpl(EmployeeRepository employeeRepository) {
         this.employeeRepository = employeeRepository;
@@ -40,10 +42,11 @@ public class EmployeeServiceImpl implements EmployeeService {
             if (isBlank(employee.getRole())) {
                 employee.setRole("Employee");
             }
-            employee.setApprovalStatus("PENDING");
+            employee.setApprovalStatus(STATUS_PENDING);
         } else if (employee.getApprovalStatus() == null || employee.getApprovalStatus().isBlank()) {
-            employee.setApprovalStatus("APPROVED");
+            employee.setApprovalStatus(STATUS_APPROVED);
         }
+        employee.setRequestedRole(null);
         return employeeRepository.save(employee);
     }
 
@@ -70,14 +73,13 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public Employee updateEmployee(Long id, Employee updatedEmployee) {
+    public Employee updateEmployee(Long id, Employee updatedEmployee, boolean adminOverride) {
         Employee existing = getEmployeeById(id);
         normalize(updatedEmployee);
         validateRequired(updatedEmployee);
         validateUnique(updatedEmployee, id);
 
         existing.setName(updatedEmployee.getName());
-        existing.setRole(updatedEmployee.getRole());
         existing.setBirthdate(updatedEmployee.getBirthdate());
         existing.setGender(updatedEmployee.getGender());
         existing.setHobbies(updatedEmployee.getHobbies());
@@ -90,8 +92,25 @@ public class EmployeeServiceImpl implements EmployeeService {
         if (updatedEmployee.getEmail() != null) {
             existing.setEmail(updatedEmployee.getEmail());
         }
-        if (updatedEmployee.getApprovalStatus() != null && !updatedEmployee.getApprovalStatus().isBlank()) {
-            existing.setApprovalStatus(updatedEmployee.getApprovalStatus());
+
+        String currentRole = safeTrim(existing.getRole());
+        String incomingRole = safeTrim(updatedEmployee.getRole());
+        boolean roleChanged = !currentRole.equals(incomingRole);
+
+        if (adminOverride) {
+            existing.setRole(incomingRole);
+            existing.setRequestedRole(null);
+            existing.setApprovalStatus(STATUS_APPROVED);
+        } else if (roleChanged && STATUS_APPROVED.equalsIgnoreCase(safeTrim(existing.getApprovalStatus()))) {
+            // Existing approved employee requesting designation change: keep current role until admin approves.
+            existing.setRequestedRole(incomingRole);
+            existing.setApprovalStatus(STATUS_PENDING);
+        } else if (roleChanged && !isBlank(existing.getRequestedRole())) {
+            // Request already pending: update requested designation.
+            existing.setRequestedRole(incomingRole);
+        } else {
+            // New/pending registration flow: role itself remains editable before first approval.
+            existing.setRole(incomingRole);
         }
 
         return employeeRepository.save(existing);
@@ -102,8 +121,11 @@ public class EmployeeServiceImpl implements EmployeeService {
         Employee employee = getEmployeeById(id);
         if (!isBlank(approvedRole)) {
             employee.setRole(approvedRole.trim());
+        } else if (!isBlank(employee.getRequestedRole())) {
+            employee.setRole(employee.getRequestedRole().trim());
         }
-        employee.setApprovalStatus("APPROVED");
+        employee.setRequestedRole(null);
+        employee.setApprovalStatus(STATUS_APPROVED);
         return employeeRepository.save(employee);
     }
 
@@ -232,5 +254,9 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    private String safeTrim(String value) {
+        return value == null ? "" : value.trim();
     }
 }

@@ -30,6 +30,11 @@ const EmployeeList = ({ refresh }) => {
     return normalized !== 'null' && normalized !== 'undefined' && normalized !== 'na' && normalized !== '-';
   };
 
+  const hasDesignationRequest = (employee) => {
+    const requested = (employee?.requestedRole || '').trim();
+    return !!requested;
+  };
+
   useEffect(() => {
     fetchEmployees();
   }, [refresh]);
@@ -50,7 +55,10 @@ const EmployeeList = ({ refresh }) => {
       setPendingEmployees(sortedPending);
       setPendingRoleDrafts(
         Object.fromEntries(
-          sortedPending.map((employee) => [employee.id, employee.role || 'Employee'])
+          sortedPending.map((employee) => [
+            employee.id,
+            employee.requestedRole || employee.role || 'Employee',
+          ])
         )
       );
     } catch (err) {
@@ -181,6 +189,15 @@ const EmployeeList = ({ refresh }) => {
                     <span className="pending-id">#{employee.id}</span>
                   </div>
                   <div className="pending-meta">
+                    {hasDesignationRequest(employee) ? (
+                      <span>
+                        Designation change request: <strong>{employee.role || 'N/A'}</strong> to <strong>{employee.requestedRole}</strong>
+                      </span>
+                    ) : (
+                      <span>New employee approval request</span>
+                    )}
+                  </div>
+                  <div className="pending-meta">
                     <span>{employee.email || 'No email'}</span>
                     <span>{employee.city || 'No city'}</span>
                     <span>{employee.pan || 'No PAN'}</span>
@@ -232,7 +249,7 @@ const EmployeeList = ({ refresh }) => {
                     />
                   </label>
                   <button className="btn-edit" onClick={() => handleApprove(employee.id)}>
-                    Approve Employee
+                    {hasDesignationRequest(employee) ? 'Approve Designation' : 'Approve Employee'}
                   </button>
                 </div>
               </div>

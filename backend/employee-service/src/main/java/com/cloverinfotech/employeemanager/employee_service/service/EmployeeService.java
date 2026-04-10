@@ -20,7 +20,7 @@ public interface EmployeeService {
     /** Returns the employee with the given login email, or null if not found. */
     Employee getEmployeeByEmail(String email);
 
-    Employee updateEmployee(Long id, Employee employee);
+    Employee updateEmployee(Long id, Employee employee, boolean adminOverride);
 
     Employee approveEmployee(Long id, String approvedRole);
 

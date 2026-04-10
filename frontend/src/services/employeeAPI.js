@@ -35,8 +35,12 @@ export const employeeAPI = {
   },
 
   // Update employee
-  updateEmployee: (id, employee) => {
-    return axiosInstance.put(`/employees/${id}`, employee);
+  updateEmployee: (id, employee, options = {}) => {
+    return axiosInstance.put(`/employees/${id}`, employee, {
+      params: {
+        adminOverride: options.adminOverride ? 'true' : 'false',
+      },
+    });
   },
 
   // Delete employee

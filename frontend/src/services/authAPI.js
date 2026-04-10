@@ -46,6 +46,7 @@ export const authAPI = {
     const allowlistedUsers = [
       { email: 'theelemental0@gmail.com', role: 'Admin' },
       { email: 'arnav.desai@somaiya.edu', role: 'Employee' },
+      { email: 'arundange1612@gmail.com', role: 'Employee' },
     ];
     const allowlisted = allowlistedUsers.find((u) => u.email === normalizedEmail);
     const isAllowed = isCloverEmail || !!allowlisted;
