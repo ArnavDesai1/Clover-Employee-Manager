@@ -53,6 +53,10 @@ export const employeeAPI = {
     return axiosInstance.get('/employees/pending');
   },
 
+  backfillDemoEmails: () => {
+    return axiosInstance.post('/employees/backfill-demo-emails');
+  },
+
   approveEmployee: (id, role) => {
     return axiosInstance.put(`/employees/${id}/approve`, null, {
       params: {

@@ -34,4 +34,6 @@ public interface EmployeeService {
     byte[] getProfilePicture(Long employeeId);
 
     byte[] getAddressProof(Long employeeId);
+
+    int backfillMissingDemoEmails();
 }

@@ -46,6 +46,8 @@ const EmployeeList = ({ refresh }) => {
     setLoading(true);
     setError('');
     try {
+      await employeeAPI.backfillDemoEmails();
+
       const [approvedRes, pendingRes, blockedRes] = await Promise.all([
         employeeAPI.getAllEmployees(),
         employeeAPI.getPendingEmployees(),

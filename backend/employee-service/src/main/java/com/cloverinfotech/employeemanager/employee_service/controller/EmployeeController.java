@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/employees")
@@ -37,6 +38,12 @@ public class EmployeeController {
     @GetMapping("/pending")
     public List<Employee> getPendingEmployees() {
         return employeeService.getPendingEmployees();
+    }
+
+    @PostMapping("/backfill-demo-emails")
+    public ResponseEntity<Map<String, Object>> backfillDemoEmails() {
+        int updated = employeeService.backfillMissingDemoEmails();
+        return ResponseEntity.ok(Map.of("updated", updated));
     }
 
     @GetMapping("/by-email")

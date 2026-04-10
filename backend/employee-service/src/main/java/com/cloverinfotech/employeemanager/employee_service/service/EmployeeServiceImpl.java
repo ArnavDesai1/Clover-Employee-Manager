@@ -3,14 +3,17 @@ package com.cloverinfotech.employeemanager.employee_service.service;
 import com.cloverinfotech.employeemanager.employee_service.entity.Employee;
 import com.cloverinfotech.employeemanager.employee_service.repository.EmployeeRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 @Service
@@ -196,6 +199,35 @@ public class EmployeeServiceImpl implements EmployeeService {
         }
     }
 
+    @Override
+    @Transactional
+    public int backfillMissingDemoEmails() {
+        List<Employee> allEmployees = employeeRepository.findAll();
+        if (allEmployees.isEmpty()) return 0;
+
+        Set<String> usedEmails = new HashSet<>();
+        for (Employee employee : allEmployees) {
+            String normalized = normalizeEmail(employee.getEmail());
+            if (!normalized.isBlank()) {
+                usedEmails.add(normalized);
+            }
+        }
+
+        int updated = 0;
+        for (Employee employee : allEmployees) {
+            if (!normalizeEmail(employee.getEmail()).isBlank()) continue;
+            String generated = generateDemoEmail(employee, usedEmails);
+            employee.setEmail(generated);
+            usedEmails.add(generated);
+            updated++;
+        }
+
+        if (updated > 0) {
+            employeeRepository.saveAll(allEmployees);
+        }
+        return updated;
+    }
+
     private String getExtension(String filename) {
         return filename.substring(filename.lastIndexOf('.'));
     }
@@ -267,5 +299,30 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     private String safeTrim(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private String normalizeEmail(String email) {
+        return email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String generateDemoEmail(Employee employee, Set<String> usedEmails) {
+        String baseName = (employee.getName() == null || employee.getName().isBlank())
+                ? "employee"
+                : employee.getName()
+                    .trim()
+                    .toLowerCase(Locale.ROOT)
+                    .replaceAll("[^a-z0-9]+", ".")
+                    .replaceAll("^\\.+|\\.+$", "");
+        if (baseName.isBlank()) baseName = "employee";
+
+        String employeeId = employee.getId() == null ? "new" : String.valueOf(employee.getId());
+        String email = baseName + "." + employeeId + "@demo.cloverinfotech.com";
+        if (!usedEmails.contains(email)) return email;
+
+        int suffix = 2;
+        while (usedEmails.contains(baseName + "." + employeeId + "." + suffix + "@demo.cloverinfotech.com")) {
+            suffix++;
+        }
+        return baseName + "." + employeeId + "." + suffix + "@demo.cloverinfotech.com";
     }
 }
