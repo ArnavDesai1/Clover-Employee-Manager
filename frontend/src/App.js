@@ -11,6 +11,7 @@ import ResetPassword from './components/ResetPassword';
 import ProtectedRoute from './components/ProtectedRoute';
 import ProfileIcon from './components/ProfileIcon';
 import authAPI from './services/authAPI';
+import employeeAPI from './services/employeeAPI';
 
 const Navbar = () => {
   const location = useLocation();
@@ -20,6 +21,7 @@ const Navbar = () => {
   const isAdmin = user?.role === 'Admin';
   const [showBlocklistModal, setShowBlocklistModal] = useState(false);
   const [blockedEmails, setBlockedEmails] = useState([]);
+  const [blocklistEmployees, setBlocklistEmployees] = useState([]);
   const [blockEmailInput, setBlockEmailInput] = useState('');
   const [blocklistLoading, setBlocklistLoading] = useState(false);
   const [blocklistError, setBlocklistError] = useState('');
@@ -38,6 +40,31 @@ const Navbar = () => {
     }
   };
 
+  const loadBlocklistEmployees = async () => {
+    try {
+      const [approvedRes, pendingRes] = await Promise.all([
+        employeeAPI.getAllEmployees(),
+        employeeAPI.getPendingEmployees(),
+      ]);
+      const combined = [...(approvedRes?.data || []), ...(pendingRes?.data || [])];
+      const byEmail = new Map();
+      combined.forEach((employee) => {
+        const email = (employee?.email || '').trim().toLowerCase();
+        if (!email) return;
+        if (!byEmail.has(email)) {
+          byEmail.set(email, {
+            id: employee?.id,
+            name: employee?.name || 'Unknown',
+            email,
+          });
+        }
+      });
+      setBlocklistEmployees([...byEmail.values()]);
+    } catch {
+      setBlocklistEmployees([]);
+    }
+  };
+
   useEffect(() => {
     if (isAdmin) {
       loadBlockedEmails();
@@ -48,7 +75,7 @@ const Navbar = () => {
 
   const handleOpenBlocklist = async () => {
     setShowBlocklistModal(true);
-    await loadBlockedEmails();
+    await Promise.all([loadBlockedEmails(), loadBlocklistEmployees()]);
   };
 
   const handleBlockEmail = async () => {
@@ -84,6 +111,16 @@ const Navbar = () => {
       setBlocklistLoading(false);
     }
   };
+
+  const normalizedBlockQuery = (blockEmailInput || '').trim().toLowerCase();
+  const blocklistSuggestions = normalizedBlockQuery
+    ? blocklistEmployees
+      .filter((employee) =>
+        (employee.name || '').toLowerCase().includes(normalizedBlockQuery) ||
+        employee.email.includes(normalizedBlockQuery)
+      )
+      .slice(0, 8)
+    : [];
 
   if (isAuthPage) return null;
 
@@ -161,12 +198,32 @@ const Navbar = () => {
             </div>
             <div className="app-modal-content">
               <div className="blocklist-form">
-                <input
-                  type="email"
-                  placeholder="email@example.com"
-                  value={blockEmailInput}
-                  onChange={(e) => setBlockEmailInput(e.target.value)}
-                />
+                <div className="blocklist-input-wrap">
+                  <input
+                    type="text"
+                    placeholder="Search name or enter email..."
+                    value={blockEmailInput}
+                    onChange={(e) => setBlockEmailInput(e.target.value)}
+                  />
+                  {blocklistSuggestions.length > 0 && (
+                    <div className="blocklist-suggestions">
+                      {blocklistSuggestions.map((employee) => (
+                        <button
+                          key={`${employee.email}-${employee.id}`}
+                          type="button"
+                          className="blocklist-suggestion-item"
+                          onClick={() => {
+                            setBlockEmailInput(employee.email);
+                            setBlocklistError('');
+                          }}
+                        >
+                          <span className="blocklist-suggestion-name">{employee.name}</span>
+                          <span className="blocklist-suggestion-email">{employee.email}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <button type="button" className="btn-edit" onClick={handleBlockEmail} disabled={blocklistLoading}>
                   Block Email
                 </button>

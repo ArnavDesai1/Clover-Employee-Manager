@@ -174,11 +174,61 @@
   margin-bottom: 12px;
 }
 
+.blocklist-input-wrap {
+  position: relative;
+}
+
 .blocklist-form input {
+  width: 100%;
   min-height: var(--input-height);
   padding: 0 12px;
   border: 1px solid #d8c8d1;
   border-radius: var(--radius);
+}
+
+.blocklist-suggestions {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid #dfced7;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 10;
+}
+
+.blocklist-suggestion-item {
+  min-height: auto;
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid #f1e7ec;
+  background: #fff;
+  padding: 10px 12px;
+  text-align: left;
+  display: grid;
+  gap: 3px;
+}
+
+.blocklist-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.blocklist-suggestion-item:hover {
+  background: #fdf7fa;
+}
+
+.blocklist-suggestion-name {
+  font-size: 14px;
+  color: #4a0a29;
+  font-weight: 700;
+}
+
+.blocklist-suggestion-email {
+  font-size: 13px;
+  color: #6f5a66;
 }
 
 .blocklist-list {
