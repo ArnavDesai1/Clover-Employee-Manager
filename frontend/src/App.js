@@ -23,6 +23,7 @@ const Navbar = () => {
   const [blockedEmails, setBlockedEmails] = useState([]);
   const [blocklistEmployees, setBlocklistEmployees] = useState([]);
   const [blockEmailInput, setBlockEmailInput] = useState('');
+  const [showBlocklistSuggestions, setShowBlocklistSuggestions] = useState(false);
   const [blocklistLoading, setBlocklistLoading] = useState(false);
   const [blocklistError, setBlocklistError] = useState('');
   const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -75,6 +76,7 @@ const Navbar = () => {
 
   const handleOpenBlocklist = async () => {
     setShowBlocklistModal(true);
+    setShowBlocklistSuggestions(false);
     await Promise.all([loadBlockedEmails(), loadBlocklistEmployees()]);
   };
 
@@ -93,6 +95,7 @@ const Navbar = () => {
     try {
       await authAPI.blockEmail(email);
       setBlockEmailInput('');
+      setShowBlocklistSuggestions(false);
       await loadBlockedEmails();
     } catch {
       setBlocklistError('Failed to block email.');
@@ -113,7 +116,7 @@ const Navbar = () => {
   };
 
   const normalizedBlockQuery = (blockEmailInput || '').trim().toLowerCase();
-  const blocklistSuggestions = normalizedBlockQuery
+  const blocklistSuggestions = showBlocklistSuggestions && normalizedBlockQuery
     ? blocklistEmployees
       .filter((employee) =>
         (employee.name || '').toLowerCase().includes(normalizedBlockQuery) ||
@@ -203,7 +206,13 @@ const Navbar = () => {
                     type="text"
                     placeholder="Search name or enter email..."
                     value={blockEmailInput}
-                    onChange={(e) => setBlockEmailInput(e.target.value)}
+                    onChange={(e) => {
+                      setBlockEmailInput(e.target.value);
+                      setShowBlocklistSuggestions(true);
+                    }}
+                    onFocus={() => {
+                      if ((blockEmailInput || '').trim()) setShowBlocklistSuggestions(true);
+                    }}
                   />
                   {blocklistSuggestions.length > 0 && (
                     <div className="blocklist-suggestions">
@@ -215,6 +224,7 @@ const Navbar = () => {
                           onClick={() => {
                             setBlockEmailInput(employee.email);
                             setBlocklistError('');
+                            setShowBlocklistSuggestions(false);
                           }}
                         >
                           <span className="blocklist-suggestion-name">{employee.name}</span>
