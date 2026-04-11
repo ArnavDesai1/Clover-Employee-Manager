@@ -278,26 +278,72 @@ button {
   }
 
   .navbar-brand {
-    justify-content: space-between;
+    justify-content: flex-start;
+    gap: 10px;
+  }
+
+  .logo {
+    height: 34px;
+  }
+
+  .navbar-app-name {
+    font-size: 10px;
+    letter-spacing: 0.9px;
+  }
+
+  .navbar-app-subtitle {
+    font-size: 15px;
   }
 
   .navbar-right {
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "block profile"
+      "links links";
+    align-items: center;
+    gap: 8px;
   }
 
   .nav-blocklist-btn {
+    grid-area: block;
     font-size: 13px;
     padding: 8px 10px;
+    width: fit-content;
+    max-width: 100%;
   }
 
   .nav-links {
-    flex-direction: row;
+    grid-area: links;
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
+  }
+
+  .nav-link {
+    display: block;
+    text-align: center;
+    font-size: 14px;
+    padding: 10px 10px;
+  }
+
+  .navbar-right > *:last-child {
+    grid-area: profile;
+    justify-self: end;
   }
 
   .container {
     margin: 24px auto;
     padding: 0 16px;
+  }
+
+  .blocklist-form {
+    grid-template-columns: 1fr;
+  }
+
+  .app-modal {
+    width: min(700px, 96vw);
   }
 }
 
@@ -322,3 +368,4 @@ button {
     opacity: 0.5;
   }
 }
+
