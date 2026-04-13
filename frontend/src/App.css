@@ -347,6 +347,63 @@ button {
   }
 }
 
+@media (max-width: 560px) {
+  .navbar {
+    padding: 10px 12px 12px;
+  }
+
+  .navbar-brand {
+    align-items: center;
+    gap: 8px;
+  }
+
+  .logo {
+    height: 30px;
+  }
+
+  .navbar-app-name {
+    font-size: 9px;
+    letter-spacing: 0.7px;
+  }
+
+  .navbar-app-subtitle {
+    font-size: 14px;
+  }
+
+  .navbar-right {
+    grid-template-columns: 1fr auto;
+    gap: 6px;
+  }
+
+  .nav-blocklist-btn {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+
+  .nav-links {
+    display: flex;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 6px;
+    padding-bottom: 2px;
+  }
+
+  .nav-links li {
+    flex: 0 0 auto;
+  }
+
+  .nav-link {
+    white-space: nowrap;
+    font-size: 13px;
+    padding: 9px 12px;
+  }
+
+  .container {
+    margin: 16px auto;
+    padding: 0 12px;
+  }
+}
+
 @keyframes appFadeIn {
   from {
     opacity: 0;

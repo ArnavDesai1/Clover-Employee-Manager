@@ -427,13 +427,14 @@
     position: static;
     display: flex;
     flex-direction: row;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 4px;
     border-radius: 12px;
     padding: 8px;
     justify-content: flex-start;
-    max-height: 60px;
     overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
   }
 
   .alphabet-circle {
@@ -443,9 +444,10 @@
   }
 
   .list-header {
-    flex-direction: column;
-    gap: 12px;
-    align-items: stretch;
+    flex-direction: row;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
     margin-bottom: 24px;
     padding-bottom: 16px;
   }
@@ -462,17 +464,11 @@
   }
 
   .list-header-actions {
-    width: 100%;
-    display: grid;
-    grid-template-columns: auto 1fr;
+    width: auto;
+    display: block;
+    grid-template-columns: none;
     align-items: center;
     gap: 10px;
-  }
-
-  .btn-refresh {
-    min-width: 44px;
-    min-height: 44px;
-    justify-self: start;
   }
 
   .card-header {
@@ -546,6 +542,25 @@
 }
 
 @media (max-width: 480px) {
+  .list-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .list-header-title {
+    justify-content: space-between;
+  }
+
+  .btn-refresh {
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .list-header-actions {
+    width: 100%;
+  }
+
   .list-header h2 {
     font-size: 20px;
   }
